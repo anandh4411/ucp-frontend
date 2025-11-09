@@ -48,7 +48,7 @@ export const getNavItems = (
   const adminItems: SidebarItem[] = [
     {
       label: "User Management",
-      path: "/dashboard/users",
+      path: "/dashboard/user-management",
       icon: Users,
     },
     {
