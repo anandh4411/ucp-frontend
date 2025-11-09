@@ -260,7 +260,7 @@ export function AppearanceForm() {
           Select the color theme for the dashboard.
         </p>
         <div className="grid max-w-4xl grid-cols-4 gap-4 pt-2">
-          {colorThemes.map((theme) => (
+          {/* {colorThemes.map((theme) => (
             <ColorThemeItem
               key={theme}
               colorTheme={theme}
@@ -269,7 +269,7 @@ export function AppearanceForm() {
               primaryColor={colorThemePreview[theme].primary}
               secondaryColor={colorThemePreview[theme].secondary}
             />
-          ))}
+          ))} */}
         </div>
       </div>
     </div>
