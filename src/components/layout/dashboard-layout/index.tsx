@@ -59,7 +59,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
 
   // Navbar props with defaults
   welcomeMessage = "Welcome back",
-  subText = "It's the best time to manage your ID cards",
+  subText = "Start using the unit communication portal",
   userProfile = defaultUserProfile,
   onProfileClick,
   ...props

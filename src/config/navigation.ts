@@ -6,6 +6,7 @@ import {
   Users,
   Home,
   Activity,
+  Shield,
 } from "lucide-react";
 import { SidebarItem } from "@/components/layout/types";
 import React from "react";
@@ -68,17 +69,7 @@ export const getNavItems = (
 
 export const footerNavItems: SidebarItem[] = [];
 
-// Military-style logo
-const LogoIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => {
-  return React.createElement("img", {
-    src: "/logo.png",
-    alt: "UCP Logo",
-    className: "w-full",
-    ...props,
-  });
-};
-
 export const brandingConfig = {
-  iconComponent: LogoIcon,
+  iconComponent: Shield,
   name: "Unit Comn Portal",
 };

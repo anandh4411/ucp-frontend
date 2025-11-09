@@ -25,7 +25,7 @@ export interface NavbarProps extends React.HTMLAttributes<HTMLElement> {
 export function Navbar({
   // Welcome section
   welcomeMessage = "Welcome back",
-  subText = "It's the best time to manage your ID cards",
+  subText = "",
   userProfile = {
     name: "John Doe",
     email: "john@example.com",
