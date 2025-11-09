@@ -37,22 +37,9 @@ const InstitutionsDashboardIndexLazyRouteImport = createFileRoute(
 )()
 const DashboardUsersIndexLazyRouteImport =
   createFileRoute('/dashboard/users/')()
-const DashboardTemplatesIndexLazyRouteImport = createFileRoute(
-  '/dashboard/templates/',
-)()
-const DashboardSubmissionsIndexLazyRouteImport = createFileRoute(
-  '/dashboard/submissions/',
-)()
-const DashboardProductsIndexLazyRouteImport = createFileRoute(
-  '/dashboard/products/',
-)()
-const DashboardPhasesIndexLazyRouteImport =
-  createFileRoute('/dashboard/phases/')()
 const DashboardInstitutionsIndexLazyRouteImport = createFileRoute(
   '/dashboard/institutions/',
 )()
-const DashboardFormsIndexLazyRouteImport =
-  createFileRoute('/dashboard/forms/')()
 const DashboardSettingsNotificationsLazyRouteImport = createFileRoute(
   '/dashboard/settings/notifications',
 )()
@@ -170,38 +157,6 @@ const DashboardUsersIndexLazyRoute = DashboardUsersIndexLazyRouteImport.update({
 } as any).lazy(() =>
   import('./routes/dashboard/users/index.lazy').then((d) => d.Route),
 )
-const DashboardTemplatesIndexLazyRoute =
-  DashboardTemplatesIndexLazyRouteImport.update({
-    id: '/templates/',
-    path: '/templates/',
-    getParentRoute: () => DashboardRoute,
-  } as any).lazy(() =>
-    import('./routes/dashboard/templates/index.lazy').then((d) => d.Route),
-  )
-const DashboardSubmissionsIndexLazyRoute =
-  DashboardSubmissionsIndexLazyRouteImport.update({
-    id: '/submissions/',
-    path: '/submissions/',
-    getParentRoute: () => DashboardRoute,
-  } as any).lazy(() =>
-    import('./routes/dashboard/submissions/index.lazy').then((d) => d.Route),
-  )
-const DashboardProductsIndexLazyRoute =
-  DashboardProductsIndexLazyRouteImport.update({
-    id: '/products/',
-    path: '/products/',
-    getParentRoute: () => DashboardRoute,
-  } as any).lazy(() =>
-    import('./routes/dashboard/products/index.lazy').then((d) => d.Route),
-  )
-const DashboardPhasesIndexLazyRoute =
-  DashboardPhasesIndexLazyRouteImport.update({
-    id: '/phases/',
-    path: '/phases/',
-    getParentRoute: () => DashboardRoute,
-  } as any).lazy(() =>
-    import('./routes/dashboard/phases/index.lazy').then((d) => d.Route),
-  )
 const DashboardInstitutionsIndexLazyRoute =
   DashboardInstitutionsIndexLazyRouteImport.update({
     id: '/',
@@ -210,13 +165,6 @@ const DashboardInstitutionsIndexLazyRoute =
   } as any).lazy(() =>
     import('./routes/dashboard/institutions/index.lazy').then((d) => d.Route),
   )
-const DashboardFormsIndexLazyRoute = DashboardFormsIndexLazyRouteImport.update({
-  id: '/forms/',
-  path: '/forms/',
-  getParentRoute: () => DashboardRoute,
-} as any).lazy(() =>
-  import('./routes/dashboard/forms/index.lazy').then((d) => d.Route),
-)
 const DashboardSettingsIndexRoute = DashboardSettingsIndexRouteImport.update({
   id: '/',
   path: '/',
@@ -279,12 +227,7 @@ export interface FileRoutesByFullPath {
   '/dashboard/settings/display': typeof DashboardSettingsDisplayLazyRoute
   '/dashboard/settings/notifications': typeof DashboardSettingsNotificationsLazyRoute
   '/dashboard/settings/': typeof DashboardSettingsIndexRoute
-  '/dashboard/forms': typeof DashboardFormsIndexLazyRoute
   '/dashboard/institutions/': typeof DashboardInstitutionsIndexLazyRoute
-  '/dashboard/phases': typeof DashboardPhasesIndexLazyRoute
-  '/dashboard/products': typeof DashboardProductsIndexLazyRoute
-  '/dashboard/submissions': typeof DashboardSubmissionsIndexLazyRoute
-  '/dashboard/templates': typeof DashboardTemplatesIndexLazyRoute
   '/dashboard/users': typeof DashboardUsersIndexLazyRoute
   '/institutions/dashboard': typeof InstitutionsDashboardIndexLazyRoute
   '/institutions/submissions': typeof InstitutionsSubmissionsIndexLazyRoute
@@ -307,12 +250,7 @@ export interface FileRoutesByTo {
   '/dashboard/settings/display': typeof DashboardSettingsDisplayLazyRoute
   '/dashboard/settings/notifications': typeof DashboardSettingsNotificationsLazyRoute
   '/dashboard/settings': typeof DashboardSettingsIndexRoute
-  '/dashboard/forms': typeof DashboardFormsIndexLazyRoute
   '/dashboard/institutions': typeof DashboardInstitutionsIndexLazyRoute
-  '/dashboard/phases': typeof DashboardPhasesIndexLazyRoute
-  '/dashboard/products': typeof DashboardProductsIndexLazyRoute
-  '/dashboard/submissions': typeof DashboardSubmissionsIndexLazyRoute
-  '/dashboard/templates': typeof DashboardTemplatesIndexLazyRoute
   '/dashboard/users': typeof DashboardUsersIndexLazyRoute
   '/institutions/dashboard': typeof InstitutionsDashboardIndexLazyRoute
   '/institutions/submissions': typeof InstitutionsSubmissionsIndexLazyRoute
@@ -340,12 +278,7 @@ export interface FileRoutesById {
   '/dashboard/settings/display': typeof DashboardSettingsDisplayLazyRoute
   '/dashboard/settings/notifications': typeof DashboardSettingsNotificationsLazyRoute
   '/dashboard/settings/': typeof DashboardSettingsIndexRoute
-  '/dashboard/forms/': typeof DashboardFormsIndexLazyRoute
   '/dashboard/institutions/': typeof DashboardInstitutionsIndexLazyRoute
-  '/dashboard/phases/': typeof DashboardPhasesIndexLazyRoute
-  '/dashboard/products/': typeof DashboardProductsIndexLazyRoute
-  '/dashboard/submissions/': typeof DashboardSubmissionsIndexLazyRoute
-  '/dashboard/templates/': typeof DashboardTemplatesIndexLazyRoute
   '/dashboard/users/': typeof DashboardUsersIndexLazyRoute
   '/institutions/dashboard/': typeof InstitutionsDashboardIndexLazyRoute
   '/institutions/submissions/': typeof InstitutionsSubmissionsIndexLazyRoute
@@ -374,12 +307,7 @@ export interface FileRouteTypes {
     | '/dashboard/settings/display'
     | '/dashboard/settings/notifications'
     | '/dashboard/settings/'
-    | '/dashboard/forms'
     | '/dashboard/institutions/'
-    | '/dashboard/phases'
-    | '/dashboard/products'
-    | '/dashboard/submissions'
-    | '/dashboard/templates'
     | '/dashboard/users'
     | '/institutions/dashboard'
     | '/institutions/submissions'
@@ -402,12 +330,7 @@ export interface FileRouteTypes {
     | '/dashboard/settings/display'
     | '/dashboard/settings/notifications'
     | '/dashboard/settings'
-    | '/dashboard/forms'
     | '/dashboard/institutions'
-    | '/dashboard/phases'
-    | '/dashboard/products'
-    | '/dashboard/submissions'
-    | '/dashboard/templates'
     | '/dashboard/users'
     | '/institutions/dashboard'
     | '/institutions/submissions'
@@ -434,12 +357,7 @@ export interface FileRouteTypes {
     | '/dashboard/settings/display'
     | '/dashboard/settings/notifications'
     | '/dashboard/settings/'
-    | '/dashboard/forms/'
     | '/dashboard/institutions/'
-    | '/dashboard/phases/'
-    | '/dashboard/products/'
-    | '/dashboard/submissions/'
-    | '/dashboard/templates/'
     | '/dashboard/users/'
     | '/institutions/dashboard/'
     | '/institutions/submissions/'
@@ -595,47 +513,12 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardUsersIndexLazyRouteImport
       parentRoute: typeof DashboardRoute
     }
-    '/dashboard/templates/': {
-      id: '/dashboard/templates/'
-      path: '/templates'
-      fullPath: '/dashboard/templates'
-      preLoaderRoute: typeof DashboardTemplatesIndexLazyRouteImport
-      parentRoute: typeof DashboardRoute
-    }
-    '/dashboard/submissions/': {
-      id: '/dashboard/submissions/'
-      path: '/submissions'
-      fullPath: '/dashboard/submissions'
-      preLoaderRoute: typeof DashboardSubmissionsIndexLazyRouteImport
-      parentRoute: typeof DashboardRoute
-    }
-    '/dashboard/products/': {
-      id: '/dashboard/products/'
-      path: '/products'
-      fullPath: '/dashboard/products'
-      preLoaderRoute: typeof DashboardProductsIndexLazyRouteImport
-      parentRoute: typeof DashboardRoute
-    }
-    '/dashboard/phases/': {
-      id: '/dashboard/phases/'
-      path: '/phases'
-      fullPath: '/dashboard/phases'
-      preLoaderRoute: typeof DashboardPhasesIndexLazyRouteImport
-      parentRoute: typeof DashboardRoute
-    }
     '/dashboard/institutions/': {
       id: '/dashboard/institutions/'
       path: '/'
       fullPath: '/dashboard/institutions/'
       preLoaderRoute: typeof DashboardInstitutionsIndexLazyRouteImport
       parentRoute: typeof DashboardInstitutionsRouteRoute
-    }
-    '/dashboard/forms/': {
-      id: '/dashboard/forms/'
-      path: '/forms'
-      fullPath: '/dashboard/forms'
-      preLoaderRoute: typeof DashboardFormsIndexLazyRouteImport
-      parentRoute: typeof DashboardRoute
     }
     '/dashboard/settings/': {
       id: '/dashboard/settings/'
@@ -716,11 +599,6 @@ interface DashboardRouteChildren {
   DashboardInstitutionsRouteRoute: typeof DashboardInstitutionsRouteRouteWithChildren
   DashboardSettingsRouteRoute: typeof DashboardSettingsRouteRouteWithChildren
   DashboardIndexRoute: typeof DashboardIndexRoute
-  DashboardFormsIndexLazyRoute: typeof DashboardFormsIndexLazyRoute
-  DashboardPhasesIndexLazyRoute: typeof DashboardPhasesIndexLazyRoute
-  DashboardProductsIndexLazyRoute: typeof DashboardProductsIndexLazyRoute
-  DashboardSubmissionsIndexLazyRoute: typeof DashboardSubmissionsIndexLazyRoute
-  DashboardTemplatesIndexLazyRoute: typeof DashboardTemplatesIndexLazyRoute
   DashboardUsersIndexLazyRoute: typeof DashboardUsersIndexLazyRoute
 }
 
@@ -728,11 +606,6 @@ const DashboardRouteChildren: DashboardRouteChildren = {
   DashboardInstitutionsRouteRoute: DashboardInstitutionsRouteRouteWithChildren,
   DashboardSettingsRouteRoute: DashboardSettingsRouteRouteWithChildren,
   DashboardIndexRoute: DashboardIndexRoute,
-  DashboardFormsIndexLazyRoute: DashboardFormsIndexLazyRoute,
-  DashboardPhasesIndexLazyRoute: DashboardPhasesIndexLazyRoute,
-  DashboardProductsIndexLazyRoute: DashboardProductsIndexLazyRoute,
-  DashboardSubmissionsIndexLazyRoute: DashboardSubmissionsIndexLazyRoute,
-  DashboardTemplatesIndexLazyRoute: DashboardTemplatesIndexLazyRoute,
   DashboardUsersIndexLazyRoute: DashboardUsersIndexLazyRoute,
 }
 

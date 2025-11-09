@@ -1,79 +1,78 @@
 import {
-  Building2,
-  FileText,
-  FileCheck2,
-  Fingerprint,
-  Layers,
+  MessageSquare,
+  Megaphone,
+  FolderOpen,
+  Calendar,
   Users,
   Home,
-  LayoutTemplate, // Add this for Templates
-  Package, // Add this for Products
+  Activity,
 } from "lucide-react";
 import { SidebarItem } from "@/components/layout/types";
 import React from "react";
 
-// Helper function to determine which nav items to return based on path
-export const getNavItems = (currentPath: string): SidebarItem[] => {
-  const isInstitutionChildRoute = currentPath.startsWith("/institutions/");
-
-  if (isInstitutionChildRoute) {
-    // Institution-specific navigation
-    return [
-      {
-        label: "Dashboard",
-        path: "/institutions/dashboard",
-        icon: Home,
-      },
-      {
-        label: "Submissions",
-        path: "/institutions/submissions",
-        icon: Users,
-      },
-    ];
-  }
-
-  // Default admin navigation
-  return [
+// Main navigation based on user role
+export const getNavItems = (
+  currentPath: string,
+  userRole?: string
+): SidebarItem[] => {
+  // Common items for all users
+  const commonItems: SidebarItem[] = [
     {
-      label: "Institutions",
-      path: "/dashboard/institutions",
-      icon: Building2,
+      label: "Dashboard",
+      path: "/dashboard",
+      icon: Home,
     },
     {
-      label: "Forms",
-      path: "/dashboard/forms",
-      icon: FileText,
+      label: "Messages",
+      path: "/dashboard/messages",
+      icon: MessageSquare,
     },
     {
-      label: "Phases",
-      path: "/dashboard/phases",
-      icon: Layers,
+      label: "Announcements",
+      path: "/dashboard/announcements",
+      icon: Megaphone,
     },
     {
-      label: "Submissions",
-      path: "/dashboard/submissions",
-      icon: FileCheck2,
+      label: "Resources",
+      path: "/dashboard/resources",
+      icon: FolderOpen,
     },
     {
-      label: "Templates",
-      path: "/dashboard/templates",
-      icon: LayoutTemplate, // Changed icon
-    },
-    {
-      label: "Products",
-      path: "/dashboard/products",
-      icon: Package, // Changed icon
+      label: "Calendar",
+      path: "/dashboard/calendar",
+      icon: Calendar,
     },
   ];
+
+  // Admin/IT JCO specific items
+  const adminItems: SidebarItem[] = [
+    {
+      label: "User Management",
+      path: "/dashboard/users",
+      icon: Users,
+    },
+    {
+      label: "Analytics",
+      path: "/dashboard/analytics",
+      icon: Activity,
+    },
+  ];
+
+  // Return based on role
+  if (userRole === "adjt" || userRole === "it_jco") {
+    return [...commonItems, ...adminItems];
+  }
+
+  return commonItems;
 };
 
 export const footerNavItems: SidebarItem[] = [];
 
-// Custom logo component
+// Military-style logo
 const LogoIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => {
   return React.createElement("img", {
     src: "/logo.png",
-    alt: "Impressaa Logo",
+    alt: "UCP Logo",
     className: "w-full",
     ...props,
   });
@@ -81,5 +80,5 @@ const LogoIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => {
 
 export const brandingConfig = {
   iconComponent: LogoIcon,
-  name: "Impressaa",
+  name: "Unit Comn Portal",
 };

@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect, useState } from "react";
 
-type ColorTheme = "blue";
+type ColorTheme = "military";
 
 type ColorThemeProviderProps = {
   children: React.ReactNode;
@@ -14,55 +14,55 @@ type ColorThemeProviderState = {
 };
 
 const initialState: ColorThemeProviderState = {
-  colorTheme: "blue",
+  colorTheme: "military",
   setColorTheme: () => null,
 };
 
 const ColorThemeProviderContext =
   createContext<ColorThemeProviderState>(initialState);
 
-// Keep only blue theme from original implementation
+// Military theme with olive green, khaki, and army colors
 const colorThemes = {
-  blue: {
+  military: {
     light: {
-      primary: "oklch(0.623 0.214 259.815)",
-      primaryForeground: "oklch(0.97 0.014 254.604)",
-      ring: "oklch(0.623 0.214 259.815)",
-      sidebarPrimary: "oklch(0.623 0.214 259.815)",
-      sidebarPrimaryForeground: "oklch(0.97 0.014 254.604)",
-      sidebarRing: "oklch(0.623 0.214 259.815)",
-      chart1: "oklch(0.623 0.214 259.815)",
-      chart2: "oklch(0.72 0.16 259.815)",
-      chart3: "oklch(0.55 0.26 259.815)",
-      chart4: "oklch(0.82 0.12 259.815)",
-      chart5: "oklch(0.48 0.30 259.815)",
+      primary: "oklch(0.45 0.12 145)", // Olive green
+      primaryForeground: "oklch(0.98 0.01 145)",
+      ring: "oklch(0.45 0.12 145)",
+      sidebarPrimary: "oklch(0.35 0.10 145)", // Darker olive
+      sidebarPrimaryForeground: "oklch(0.98 0.01 145)",
+      sidebarRing: "oklch(0.45 0.12 145)",
+      chart1: "oklch(0.45 0.12 145)", // Olive
+      chart2: "oklch(0.55 0.10 75)", // Khaki/tan
+      chart3: "oklch(0.40 0.08 130)", // Forest green
+      chart4: "oklch(0.50 0.06 60)", // Desert sand
+      chart5: "oklch(0.35 0.15 145)", // Deep olive
     },
     dark: {
-      primary: "oklch(0.546 0.245 262.881)",
-      primaryForeground: "oklch(0.379 0.146 265.522)",
-      ring: "oklch(0.488 0.243 264.376)",
-      sidebarPrimary: "oklch(0.546 0.245 262.881)",
-      sidebarPrimaryForeground: "oklch(0.379 0.146 265.522)",
-      sidebarRing: "oklch(0.488 0.243 264.376)",
-      chart1: "oklch(0.546 0.245 262.881)",
-      chart2: "oklch(0.65 0.20 262.881)",
-      chart3: "oklch(0.48 0.28 262.881)",
-      chart4: "oklch(0.75 0.15 262.881)",
-      chart5: "oklch(0.42 0.32 262.881)",
+      primary: "oklch(0.55 0.12 145)", // Lighter olive for dark mode
+      primaryForeground: "oklch(0.15 0.02 145)",
+      ring: "oklch(0.50 0.12 145)",
+      sidebarPrimary: "oklch(0.45 0.12 145)",
+      sidebarPrimaryForeground: "oklch(0.95 0.01 145)",
+      sidebarRing: "oklch(0.50 0.12 145)",
+      chart1: "oklch(0.55 0.12 145)",
+      chart2: "oklch(0.60 0.10 75)",
+      chart3: "oklch(0.50 0.08 130)",
+      chart4: "oklch(0.55 0.06 60)",
+      chart5: "oklch(0.45 0.15 145)",
     },
   },
 };
 
 export function ColorThemeProvider({
   children,
-  defaultColorTheme = "blue",
-  storageKey = "impressaa-ui-color-theme",
+  defaultColorTheme = "military",
+  storageKey = "ucp-ui-color-theme",
   ...props
 }: ColorThemeProviderProps) {
   const [colorTheme, _setColorTheme] = useState<ColorTheme>(() => {
     try {
       const stored = localStorage.getItem(storageKey) as ColorTheme;
-      return stored === "blue" ? stored : defaultColorTheme;
+      return stored === "military" ? stored : defaultColorTheme;
     } catch {
       return defaultColorTheme;
     }
@@ -72,13 +72,11 @@ export function ColorThemeProvider({
     const root = window.document.documentElement;
 
     const applyColorTheme = (theme: ColorTheme) => {
-      // Ensure the theme exists before applying
       if (!colorThemes[theme]) return;
 
       const isDark = root.classList.contains("dark");
       const colors = colorThemes[theme][isDark ? "dark" : "light"];
 
-      // Apply the color theme variables
       root.style.setProperty("--primary", colors.primary);
       root.style.setProperty("--primary-foreground", colors.primaryForeground);
       root.style.setProperty("--ring", colors.ring);
@@ -89,7 +87,6 @@ export function ColorThemeProvider({
       );
       root.style.setProperty("--sidebar-ring", colors.sidebarRing);
 
-      // Apply chart colors
       root.style.setProperty("--chart-1", colors.chart1);
       root.style.setProperty("--chart-2", colors.chart2);
       root.style.setProperty("--chart-3", colors.chart3);
@@ -99,7 +96,6 @@ export function ColorThemeProvider({
 
     applyColorTheme(colorTheme);
 
-    // Listen for theme changes to update colors accordingly
     const observer = new MutationObserver(() => {
       applyColorTheme(colorTheme);
     });
@@ -117,7 +113,6 @@ export function ColorThemeProvider({
       localStorage.setItem(storageKey, theme);
       _setColorTheme(theme);
     } catch {
-      // Handle localStorage errors silently
       _setColorTheme(theme);
     }
   };
