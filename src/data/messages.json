@@ -1,0 +1,200 @@
+{
+  "conversations": [
+    {
+      "id": "1",
+      "subject": "Training Schedule Update",
+      "participants": [
+        {
+          "id": "1",
+          "name": "Major Rajesh Kumar",
+          "rank": "Major",
+          "avatar": null
+        },
+        {
+          "id": "3",
+          "name": "Sepoy Vikram Mehta",
+          "rank": "Sepoy",
+          "avatar": null
+        }
+      ],
+      "lastMessage": {
+        "content": "All personnel must review the updated training schedule by EOD.",
+        "timestamp": "2024-11-09T10:30:00Z",
+        "senderId": "1"
+      },
+      "isRead": false,
+      "isImportant": true,
+      "isUrgent": false,
+      "unreadCount": 2,
+      "category": "official"
+    },
+    {
+      "id": "2",
+      "subject": "Equipment Maintenance Report",
+      "participants": [
+        {
+          "id": "2",
+          "name": "Subedar Amit Singh",
+          "rank": "Subedar",
+          "avatar": null
+        },
+        {
+          "id": "3",
+          "name": "Sepoy Vikram Mehta",
+          "rank": "Sepoy",
+          "avatar": null
+        }
+      ],
+      "lastMessage": {
+        "content": "Submit your equipment status report by Friday.",
+        "timestamp": "2024-11-08T14:20:00Z",
+        "senderId": "2"
+      },
+      "isRead": false,
+      "isImportant": false,
+      "isUrgent": false,
+      "unreadCount": 1,
+      "category": "maintenance"
+    },
+    {
+      "id": "3",
+      "subject": "Leave Application Approved",
+      "participants": [
+        {
+          "id": "1",
+          "name": "Major Rajesh Kumar",
+          "rank": "Major",
+          "avatar": null
+        },
+        {
+          "id": "3",
+          "name": "Sepoy Vikram Mehta",
+          "rank": "Sepoy",
+          "avatar": null
+        }
+      ],
+      "lastMessage": {
+        "content": "Your leave application has been approved. Enjoy your time off.",
+        "timestamp": "2024-11-07T09:15:00Z",
+        "senderId": "1"
+      },
+      "isRead": true,
+      "isImportant": false,
+      "isUrgent": false,
+      "unreadCount": 0,
+      "category": "administrative"
+    },
+    {
+      "id": "4",
+      "subject": "URGENT: Parade Ground Assembly",
+      "participants": [
+        {
+          "id": "1",
+          "name": "Major Rajesh Kumar",
+          "rank": "Major",
+          "avatar": null
+        }
+      ],
+      "lastMessage": {
+        "content": "All units report to parade ground at 0600 hrs tomorrow.",
+        "timestamp": "2024-11-09T16:45:00Z",
+        "senderId": "1"
+      },
+      "isRead": false,
+      "isImportant": true,
+      "isUrgent": true,
+      "unreadCount": 1,
+      "category": "urgent"
+    }
+  ],
+  "messageThreads": {
+    "1": [
+      {
+        "id": "m1",
+        "conversationId": "1",
+        "senderId": "1",
+        "senderName": "Major Rajesh Kumar",
+        "senderRank": "Major",
+        "content": "Good morning. We have updated the training schedule for next week.",
+        "timestamp": "2024-11-09T08:00:00Z",
+        "isRead": true
+      },
+      {
+        "id": "m2",
+        "conversationId": "1",
+        "senderId": "3",
+        "senderName": "Sepoy Vikram Mehta",
+        "senderRank": "Sepoy",
+        "content": "Understood, Sir. Will review immediately.",
+        "timestamp": "2024-11-09T08:15:00Z",
+        "isRead": true
+      },
+      {
+        "id": "m3",
+        "conversationId": "1",
+        "senderId": "1",
+        "senderName": "Major Rajesh Kumar",
+        "senderRank": "Major",
+        "content": "All personnel must review the updated training schedule by EOD.",
+        "timestamp": "2024-11-09T10:30:00Z",
+        "isRead": false
+      }
+    ],
+    "2": [
+      {
+        "id": "m4",
+        "conversationId": "2",
+        "senderId": "2",
+        "senderName": "Subedar Amit Singh",
+        "senderRank": "Subedar",
+        "content": "Please provide equipment maintenance status for your unit.",
+        "timestamp": "2024-11-08T10:00:00Z",
+        "isRead": true
+      },
+      {
+        "id": "m5",
+        "conversationId": "2",
+        "senderId": "2",
+        "senderName": "Subedar Amit Singh",
+        "senderRank": "Subedar",
+        "content": "Submit your equipment status report by Friday.",
+        "timestamp": "2024-11-08T14:20:00Z",
+        "isRead": false
+      }
+    ],
+    "3": [
+      {
+        "id": "m6",
+        "conversationId": "3",
+        "senderId": "3",
+        "senderName": "Sepoy Vikram Mehta",
+        "senderRank": "Sepoy",
+        "content": "Sir, requesting leave from 15th to 20th November.",
+        "timestamp": "2024-11-05T11:00:00Z",
+        "isRead": true
+      },
+      {
+        "id": "m7",
+        "conversationId": "3",
+        "senderId": "1",
+        "senderName": "Major Rajesh Kumar",
+        "senderRank": "Major",
+        "content": "Your leave application has been approved. Enjoy your time off.",
+        "timestamp": "2024-11-07T09:15:00Z",
+        "isRead": true
+      }
+    ],
+    "4": [
+      {
+        "id": "m8",
+        "conversationId": "4",
+        "senderId": "1",
+        "senderName": "Major Rajesh Kumar",
+        "senderRank": "Major",
+        "content": "All units report to parade ground at 0600 hrs tomorrow.",
+        "timestamp": "2024-11-09T16:45:00Z",
+        "isRead": false
+      }
+    ]
+  }
+}
