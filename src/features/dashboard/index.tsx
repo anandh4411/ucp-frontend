@@ -277,7 +277,7 @@ export default function Dashboard() {
               <Button
                 variant="outline"
                 className="h-20 flex-col"
-                onClick={() => router.navigate({ to: "/dashboard/users" })}
+                onClick={() => router.navigate({ to: "/dashboard/user-management" })}
               >
                 <Users className="h-6 w-6 mb-2" />
                 Manage Users
@@ -402,7 +402,7 @@ export default function Dashboard() {
               <Button
                 variant="outline"
                 className="h-20 flex-col"
-                onClick={() => router.navigate({ to: "/dashboard/users" })}
+                onClick={() => router.navigate({ to: "/dashboard/user-management" })}
               >
                 <Users className="h-6 w-6 mb-2" />
                 Manage Users
