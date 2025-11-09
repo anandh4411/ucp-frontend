@@ -1,32 +1,31 @@
-/**
- * useLogout Hook
- *
- * React Query mutation for user logout
- * Handles logout request and clears auth context
- */
-
-import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { useAuth } from "@/context/auth-context";
-import { authApi } from "@/api/endpoints/auth";
-import { showSuccess } from "@/lib/error-handler";
+import { useMutation } from "@tanstack/react-query";
+import { useRouter } from "@tanstack/react-router";
+import { toast } from "sonner";
 
 export const useLogout = () => {
-  const { logout } = useAuth();
-  const queryClient = useQueryClient();
+  const router = useRouter();
 
   return useMutation({
-    mutationFn: () => authApi.logout(),
+    mutationFn: async () => {
+      // Simulate API call
+      await new Promise((resolve) => setTimeout(resolve, 500));
 
-    onSuccess: () => {
-      queryClient.clear();
-      logout();
-      showSuccess("Logged out successfully", "See you soon!");
+      // In real app: await authApi.logout()
+      return { success: true };
     },
+    onSuccess: () => {
+      // Clear all UCP localStorage
+      localStorage.removeItem("ucp_token");
+      localStorage.removeItem("ucp_user");
+      localStorage.removeItem("ucp_remember");
 
+      toast.success("Logged out successfully");
+
+      // Redirect to sign in
+      router.navigate({ to: "/sign-in" });
+    },
     onError: () => {
-      // Even if API call fails, clear local auth
-      queryClient.clear();
-      logout();
+      toast.error("Logout failed");
     },
   });
 };

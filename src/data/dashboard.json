@@ -1,0 +1,132 @@
+{
+  "adjt": {
+    "stats": {
+      "totalUsers": 245,
+      "activeUsers": 238,
+      "pendingMessages": 12,
+      "unreadAnnouncements": 3,
+      "totalMessages": 1847,
+      "totalAnnouncements": 156,
+      "resourcesShared": 89,
+      "upcomingEvents": 7
+    },
+    "recentActivity": [
+      {
+        "id": "1",
+        "type": "message",
+        "title": "New message from IT JCO",
+        "description": "System maintenance scheduled for next week",
+        "timestamp": "2024-11-09T10:30:00Z",
+        "priority": "high"
+      },
+      {
+        "id": "2",
+        "type": "announcement",
+        "title": "Monthly parade announcement",
+        "description": "All personnel required to attend",
+        "timestamp": "2024-11-09T09:15:00Z",
+        "priority": "urgent"
+      },
+      {
+        "id": "3",
+        "type": "user",
+        "title": "New user registration",
+        "description": "Lance Naik Rahul joined the unit",
+        "timestamp": "2024-11-09T08:00:00Z",
+        "priority": "normal"
+      }
+    ],
+    "pendingApprovals": [
+      {
+        "id": "1",
+        "type": "resource",
+        "title": "Training Manual Update",
+        "requestedBy": "Subedar Amit Singh",
+        "timestamp": "2024-11-08T14:20:00Z"
+      },
+      {
+        "id": "2",
+        "type": "announcement",
+        "title": "Leave notification",
+        "requestedBy": "Naik Pradeep Kumar",
+        "timestamp": "2024-11-08T11:45:00Z"
+      }
+    ]
+  },
+  "it_jco": {
+    "stats": {
+      "totalUsers": 245,
+      "activeUsers": 238,
+      "pendingMessages": 8,
+      "unreadAnnouncements": 2,
+      "totalMessages": 1847,
+      "totalAnnouncements": 156,
+      "resourcesShared": 89,
+      "systemHealth": "operational"
+    },
+    "recentActivity": [
+      {
+        "id": "1",
+        "type": "system",
+        "title": "System backup completed",
+        "description": "Daily backup successful",
+        "timestamp": "2024-11-09T06:00:00Z",
+        "priority": "normal"
+      },
+      {
+        "id": "2",
+        "type": "user",
+        "title": "Password reset request",
+        "description": "Sepoy Vikram requested password reset",
+        "timestamp": "2024-11-08T16:30:00Z",
+        "priority": "normal"
+      }
+    ],
+    "systemStatus": {
+      "server": "operational",
+      "database": "operational",
+      "storage": "85%",
+      "lastBackup": "2024-11-09T06:00:00Z"
+    }
+  },
+  "user": {
+    "stats": {
+      "unreadMessages": 5,
+      "unreadAnnouncements": 2,
+      "sharedResources": 12,
+      "upcomingEvents": 3
+    },
+    "recentMessages": [
+      {
+        "id": "1",
+        "from": "Major Rajesh Kumar",
+        "subject": "Training schedule update",
+        "preview": "Please review the updated schedule...",
+        "timestamp": "2024-11-09T10:30:00Z",
+        "isRead": false
+      },
+      {
+        "id": "2",
+        "from": "Subedar Amit Singh",
+        "subject": "Equipment maintenance",
+        "preview": "All units must complete...",
+        "timestamp": "2024-11-08T14:20:00Z",
+        "isRead": false
+      }
+    ],
+    "upcomingEvents": [
+      {
+        "id": "1",
+        "title": "Monthly Parade",
+        "date": "2024-11-15T08:00:00Z",
+        "location": "Main Ground"
+      },
+      {
+        "id": "2",
+        "title": "Physical Training",
+        "date": "2024-11-10T06:00:00Z",
+        "location": "PT Ground"
+      }
+    ]
+  }
+}

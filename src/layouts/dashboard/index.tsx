@@ -7,6 +7,7 @@ import {
   brandingConfig,
 } from "@/config/navigation";
 import { useLogout } from "@/api";
+import { getCurrentUser } from "@/guards/useAuthGuard";
 
 export const DashboardLayout = ({
   children,
@@ -16,6 +17,7 @@ export const DashboardLayout = ({
   const { mutate: logout } = useLogout();
   const location = useLocation();
   const router = useRouter();
+  const user = getCurrentUser(); // Get current user
 
   const handleNavigate = (path: string) => {
     router.navigate({ to: path });
@@ -37,8 +39,8 @@ export const DashboardLayout = ({
     name: brandingConfig.name,
   };
 
-  // Get navigation items based on current path
-  const mainNavItems = getNavItems(location.pathname);
+  // Get navigation items based on current path and user role
+  const mainNavItems = getNavItems(location.pathname, user?.role);
 
   return (
     <DashboardLayoutComponent
