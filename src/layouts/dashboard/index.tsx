@@ -48,6 +48,15 @@ export const DashboardLayout = ({
   // Get navigation items based on current path and user role
   const mainNavItems = getNavItems(location.pathname, userProfile?.role);
 
+  // User profile for navbar
+  const navbarUserProfile = userProfile
+    ? {
+        name: userProfile.name,
+        email: userProfile.email,
+        avatarUrl: userProfile.avatar || undefined,
+      }
+    : undefined;
+
   return (
     <DashboardLayoutComponent
       currentPath={location.pathname}
@@ -57,6 +66,13 @@ export const DashboardLayout = ({
       footerItems={footerNavItems}
       branding={branding}
       isPathActive={isPathActive}
+      userProfile={navbarUserProfile}
+      welcomeMessage={
+        userProfile
+          ? `Welcome back, ${userProfile.rank} ${userProfile.name}`
+          : "Welcome back"
+      }
+      subText="Unit Communication Portal"
     >
       {children}
     </DashboardLayoutComponent>

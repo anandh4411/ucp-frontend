@@ -2,7 +2,8 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter } from "@tanstack/react-router";
-import { Shield, Eye, EyeOff } from "lucide-react";
+import { Shield, Eye, EyeOff, Upload, X } from "lucide-react";
+import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -21,9 +22,29 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { SelectDropdown } from "@/components/select-dropdown";
-import { SignUpRequestSchema, SignUpRequest } from "@/types/dto/user.dto";
 import { toast } from "sonner";
-import usersData from "@/data/users.json";
+import { createUserWithEmailAndPassword } from "firebase/auth";
+import { doc, setDoc, serverTimestamp } from "firebase/firestore";
+import { auth, db } from "@/config/firebase";
+import { uploadAvatar } from "@/api/cloudinary/storage";
+
+// Signup schema
+const SignUpSchema = z
+  .object({
+    name: z.string().min(3, "Name must be at least 3 characters"),
+    email: z.string().email("Invalid email address"),
+    password: z.string().min(6, "Password must be at least 6 characters"),
+    confirmPassword: z.string(),
+    rank: z.string().min(1, "Please select your rank"),
+    serviceNumber: z.string().min(1, "Service number is required"),
+    unit: z.string().min(1, "Unit is required"),
+  })
+  .refine((data) => data.password === data.confirmPassword, {
+    message: "Passwords don't match",
+    path: ["confirmPassword"],
+  });
+
+type SignUpForm = z.infer<typeof SignUpSchema>;
 
 // Military ranks
 const ranks = [
@@ -51,9 +72,11 @@ export default function SignUp() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [avatarFile, setAvatarFile] = useState<File | null>(null);
+  const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
 
-  const form = useForm<SignUpRequest>({
-    resolver: zodResolver(SignUpRequestSchema),
+  const form = useForm<SignUpForm>({
+    resolver: zodResolver(SignUpSchema),
     defaultValues: {
       name: "",
       email: "",
@@ -65,49 +88,95 @@ export default function SignUp() {
     },
   });
 
-  const onSubmit = async (values: SignUpRequest) => {
+  const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (file.size > 2 * 1024 * 1024) {
+        toast.error("Image must be less than 2MB");
+        return;
+      }
+      if (!file.type.startsWith("image/")) {
+        toast.error("File must be an image");
+        return;
+      }
+      setAvatarFile(file);
+      setAvatarPreview(URL.createObjectURL(file));
+    }
+  };
+
+  const removeAvatar = () => {
+    setAvatarFile(null);
+    setAvatarPreview(null);
+  };
+
+  const onSubmit = async (values: SignUpForm) => {
     setIsLoading(true);
 
     try {
-      // Simulate API call delay
-      await new Promise((resolve) => setTimeout(resolve, 1500));
-
-      // Check if email already exists
-      const existingUser = usersData.find(
-        (user) => user.email === values.email
+      // Create Firebase Auth user
+      const userCredential = await createUserWithEmailAndPassword(
+        auth,
+        values.email,
+        values.password
       );
-      if (existingUser) {
-        toast.error("Email already registered");
-        setIsLoading(false);
-        return;
+      const user = userCredential.user;
+
+      // Upload avatar if provided
+      let avatarUrl = "";
+      if (avatarFile) {
+        avatarUrl = await uploadAvatar(user.uid, avatarFile);
       }
 
-      // Check if service number already exists
-      const existingServiceNumber = usersData.find(
-        (user) => user.serviceNumber === values.serviceNumber
-      );
-      if (existingServiceNumber) {
-        toast.error("Service number already registered");
-        setIsLoading(false);
-        return;
-      }
+      // Create Firestore user profile
+      await setDoc(doc(db, "users", user.uid), {
+        uuid: user.uid,
+        email: values.email,
+        name: values.name,
+        rank: values.rank,
+        role: "user", // Default role
+        serviceNumber: values.serviceNumber,
+        unit: values.unit,
+        avatar: avatarUrl || null,
+        isActive: true,
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+      });
 
-      // In real app: await api.signUp(values)
-      // For now, just simulate success
-      toast.success("Registration successful! Please sign in.");
+      // Create user preferences
+      await setDoc(doc(db, "user_preferences", user.uid), {
+        userId: user.uid,
+        theme: "system",
+        colorScheme: "blue",
+        fontFamily: "inter",
+        notificationSettings: {
+          messages: true,
+          announcements: true,
+          events: true,
+          email: true,
+          push: true,
+        },
+        updatedAt: serverTimestamp(),
+      });
 
-      // Redirect to sign in
+      toast.success("Account created successfully! Please sign in.");
       router.navigate({ to: "/sign-in" });
-    } catch (error) {
-      toast.error("Registration failed. Please try again.");
+    } catch (error: any) {
+      console.error("Signup error:", error);
+      if (error.code === "auth/email-already-in-use") {
+        toast.error("Email already registered");
+      } else if (error.code === "auth/weak-password") {
+        toast.error("Password is too weak");
+      } else {
+        toast.error(error.message || "Registration failed. Please try again.");
+      }
     } finally {
       setIsLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-green-50 to-green-100 dark:from-green-950 dark:to-green-900 p-4">
-      <Card className="w-full max-w-md shadow-xl">
+    <div className="min-h-screen overflow-y-auto flex items-start justify-center bg-gradient-to-br from-green-50 to-green-100 dark:from-green-950 dark:to-green-900 p-4 py-8">
+      <Card className="w-full max-w-md shadow-xl my-4">
         <CardHeader className="space-y-3 text-center">
           <div className="mx-auto bg-primary/10 w-16 h-16 rounded-full flex items-center justify-center">
             <Shield className="h-8 w-8 text-primary" />
@@ -123,6 +192,38 @@ export default function SignUp() {
         <CardContent>
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+              {/* Avatar Upload */}
+              <div className="flex flex-col items-center space-y-3 pb-2">
+                <FormLabel>Profile Picture (Optional)</FormLabel>
+                {avatarPreview ? (
+                  <div className="relative">
+                    <img
+                      src={avatarPreview}
+                      alt="Avatar preview"
+                      className="w-24 h-24 rounded-full object-cover border-2 border-primary"
+                    />
+                    <button
+                      type="button"
+                      onClick={removeAvatar}
+                      className="absolute -top-2 -right-2 bg-destructive text-destructive-foreground rounded-full p-1 hover:bg-destructive/90"
+                    >
+                      <X className="h-4 w-4" />
+                    </button>
+                  </div>
+                ) : (
+                  <label className="w-24 h-24 rounded-full border-2 border-dashed border-muted-foreground/50 flex items-center justify-center cursor-pointer hover:border-primary transition-colors">
+                    <Upload className="h-6 w-6 text-muted-foreground" />
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleAvatarChange}
+                      className="hidden"
+                    />
+                  </label>
+                )}
+                <p className="text-xs text-muted-foreground">Max 2MB</p>
+              </div>
+
               {/* Name */}
               <FormField
                 control={form.control}

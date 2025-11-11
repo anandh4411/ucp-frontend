@@ -40,7 +40,7 @@ export interface Notification {
 export interface UserProfile {
   name: string;
   email: string;
-  avatarUrl: string;
+  avatarUrl?: string;
 }
 
 export interface UserAccount {
