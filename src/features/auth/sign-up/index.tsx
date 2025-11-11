@@ -88,19 +88,75 @@ export default function SignUp() {
     },
   });
 
-  const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const compressImage = (file: File): Promise<File> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = (event) => {
+        const img = new Image();
+        img.src = event.target?.result as string;
+        img.onload = () => {
+          const canvas = document.createElement("canvas");
+          const ctx = canvas.getContext("2d");
+
+          // Calculate new dimensions (max 800x800)
+          let width = img.width;
+          let height = img.height;
+          const maxSize = 800;
+
+          if (width > height && width > maxSize) {
+            height = (height * maxSize) / width;
+            width = maxSize;
+          } else if (height > maxSize) {
+            width = (width * maxSize) / height;
+            height = maxSize;
+          }
+
+          canvas.width = width;
+          canvas.height = height;
+          ctx?.drawImage(img, 0, 0, width, height);
+
+          // Convert to blob with quality 0.7
+          canvas.toBlob(
+            (blob) => {
+              if (blob) {
+                const compressedFile = new File([blob], file.name, {
+                  type: "image/jpeg",
+                  lastModified: Date.now(),
+                });
+                resolve(compressedFile);
+              } else {
+                reject(new Error("Compression failed"));
+              }
+            },
+            "image/jpeg",
+            0.7
+          );
+        };
+        img.onerror = () => reject(new Error("Image load failed"));
+      };
+      reader.onerror = () => reject(new Error("File read failed"));
+    });
+  };
+
+  const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      if (file.size > 2 * 1024 * 1024) {
-        toast.error("Image must be less than 2MB");
-        return;
-      }
       if (!file.type.startsWith("image/")) {
         toast.error("File must be an image");
         return;
       }
-      setAvatarFile(file);
-      setAvatarPreview(URL.createObjectURL(file));
+
+      try {
+        // Compress the image
+        const compressedFile = await compressImage(file);
+        setAvatarFile(compressedFile);
+        setAvatarPreview(URL.createObjectURL(compressedFile));
+        toast.success(`Image compressed to ${(compressedFile.size / 1024).toFixed(0)}KB`);
+      } catch (error) {
+        console.error("Compression error:", error);
+        toast.error("Failed to process image");
+      }
     }
   };
 
@@ -114,20 +170,30 @@ export default function SignUp() {
 
     try {
       // Create Firebase Auth user
+      console.log("Creating Firebase Auth user...");
       const userCredential = await createUserWithEmailAndPassword(
         auth,
         values.email,
         values.password
       );
       const user = userCredential.user;
+      console.log("Auth user created:", user.uid);
 
       // Upload avatar if provided
       let avatarUrl = "";
       if (avatarFile) {
-        avatarUrl = await uploadAvatar(user.uid, avatarFile);
+        console.log("Uploading avatar to Cloudinary...");
+        try {
+          avatarUrl = await uploadAvatar(user.uid, avatarFile);
+          console.log("Avatar uploaded:", avatarUrl);
+        } catch (uploadError) {
+          console.error("Avatar upload failed:", uploadError);
+          // Continue without avatar - don't fail signup
+        }
       }
 
       // Create Firestore user profile
+      console.log("Creating Firestore user profile...");
       await setDoc(doc(db, "users", user.uid), {
         uuid: user.uid,
         email: values.email,
@@ -141,8 +207,10 @@ export default function SignUp() {
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
       });
+      console.log("User profile created");
 
       // Create user preferences
+      console.log("Creating user preferences...");
       await setDoc(doc(db, "user_preferences", user.uid), {
         userId: user.uid,
         theme: "system",
@@ -157,9 +225,14 @@ export default function SignUp() {
         },
         updatedAt: serverTimestamp(),
       });
+      console.log("User preferences created");
 
       toast.success("Account created successfully! Please sign in.");
-      router.navigate({ to: "/sign-in" });
+
+      // Small delay before navigation to ensure toast shows
+      setTimeout(() => {
+        router.navigate({ to: "/sign-in" });
+      }, 500);
     } catch (error: any) {
       console.error("Signup error:", error);
       if (error.code === "auth/email-already-in-use") {
@@ -175,8 +248,8 @@ export default function SignUp() {
   };
 
   return (
-    <div className="min-h-screen overflow-y-auto flex items-start justify-center bg-gradient-to-br from-green-50 to-green-100 dark:from-green-950 dark:to-green-900 p-4 py-8">
-      <Card className="w-full max-w-md shadow-xl my-4">
+    <div className="min-h-screen w-full flex justify-center bg-gradient-to-br from-green-50 to-green-100 dark:from-green-950 dark:to-green-900 py-8 px-4">
+      <Card className="w-full max-w-md shadow-xl h-[90vh] overflow-hidden overflow-y-auto">
         <CardHeader className="space-y-3 text-center">
           <div className="mx-auto bg-primary/10 w-16 h-16 rounded-full flex items-center justify-center">
             <Shield className="h-8 w-8 text-primary" />
@@ -221,7 +294,7 @@ export default function SignUp() {
                     />
                   </label>
                 )}
-                <p className="text-xs text-muted-foreground">Max 2MB</p>
+                <p className="text-xs text-muted-foreground">Any size (auto-compressed)</p>
               </div>
 
               {/* Name */}

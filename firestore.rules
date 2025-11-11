@@ -26,7 +26,8 @@ service cloud.firestore {
     // Users collection
     match /users/{userId} {
       allow read: if isAuthenticated();
-      allow create: if isAdmin();
+      // Allow self-registration during signup, or admin can create
+      allow create: if (isAuthenticated() && request.auth.uid == userId) || isAdmin();
       allow update: if isOwner(userId) || isAdmin();
       allow delete: if isAdmin() && !isOwner(userId);
 
@@ -37,6 +38,8 @@ service cloud.firestore {
 
     // User preferences
     match /user_preferences/{userId} {
+      // Allow creating own preferences during signup
+      allow create: if isAuthenticated() && request.auth.uid == userId;
       allow read, write: if isOwner(userId);
     }
 
