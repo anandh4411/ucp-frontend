@@ -42,7 +42,7 @@ export const subscribeToAnnouncements = (
       constraints.push(where('priority', '==', filters.priority));
     }
 
-    constraints.push(orderBy('isPinned', 'desc'));
+    // Temporarily use single orderBy until index is built
     constraints.push(orderBy('createdAt', 'desc'));
 
     if (filters?.limit) {
@@ -347,7 +347,7 @@ export const requestNotificationPermission = async (): Promise<NotificationPermi
 export const showBrowserNotification = (
   title: string,
   options?: NotificationOptions
-): Notification | null => {
+): globalThis.Notification | null => {
   if (!('Notification' in window)) {
     console.log('This browser does not support notifications');
     return null;

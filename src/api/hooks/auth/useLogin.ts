@@ -14,7 +14,7 @@ import { LoginRequest } from "@/types/dto/auth.dto";
 import { showSuccess } from "@/lib/error-handler";
 
 export const useLogin = () => {
-  const { login } = useAuth();
+  // const { login } = useAuth();
   const router = useRouter();
 
   const { mutate, isPending: isLoading } = useMutation({
@@ -22,7 +22,7 @@ export const useLogin = () => {
 
     onSuccess: (response: any) => {
       if (response.success && response.data) {
-        login(response.data);
+        // login(response.data);
         showSuccess("Welcome back!", "Login successful");
         router.navigate({ to: "/dashboard" });
       } else {

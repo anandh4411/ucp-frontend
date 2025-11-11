@@ -65,14 +65,29 @@ export default function SignIn() {
         return;
       }
 
-      // Store remember me preference
+      // Manually store tokens and user data for immediate access
+      localStorage.setItem("ucp_token", result.tokens.accessToken);
+      if (result.tokens.refreshToken) {
+        localStorage.setItem("ucp_refresh_token", result.tokens.refreshToken);
+      }
+      localStorage.setItem("ucp_user", JSON.stringify({
+        uuid: result.profile.uuid,
+        name: result.profile.name,
+        email: result.profile.email,
+        role: result.profile.role,
+        rank: result.profile.rank,
+        serviceNumber: result.profile.serviceNumber,
+        unit: result.profile.unit,
+        avatar: result.profile.avatar,
+      }));
+
       if (values.rememberMe) {
         localStorage.setItem("ucp_remember", "true");
       }
 
       toast.success(`Welcome back, ${result.profile.rank} ${result.profile.name}!`);
 
-      // Navigate to dashboard (auth context handles token storage via onAuthStateChange)
+      // Navigate to dashboard
       router.navigate({ to: "/dashboard" });
     } catch (error: any) {
       console.error("Login error:", error);
