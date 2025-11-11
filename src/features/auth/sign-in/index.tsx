@@ -23,7 +23,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
-import usersData from "@/data/users.json";
+import { login as firebaseLogin } from "@/api/firebase/auth";
 
 // Sign in schema - remove .default() to keep type consistent
 const SignInSchema = z.object({
@@ -52,52 +52,31 @@ export default function SignIn() {
     setIsLoading(true);
 
     try {
-      // Simulate API call delay
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+      // Call Firebase login
+      const result = await firebaseLogin({
+        email: values.email,
+        password: values.password,
+      });
 
-      // Find user in dummy data
-      const user = usersData.find(
-        (u) => u.email === values.email && u.password === values.password
-      );
-
-      if (!user) {
-        toast.error("Invalid email or password");
-        setIsLoading(false);
-        return;
-      }
-
-      if (!user.isActive) {
+      // Check if user is active
+      if (!result.profile.isActive) {
         toast.error("Your account is inactive. Contact administrator.");
         setIsLoading(false);
         return;
       }
 
-      // Store user in localStorage (simulate token storage)
-      const userSession = {
-        id: user.id,
-        uuid: user.uuid,
-        name: user.name,
-        email: user.email,
-        role: user.role,
-        rank: user.rank,
-        serviceNumber: user.serviceNumber,
-        unit: user.unit,
-        avatar: user.avatar,
-      };
-
-      localStorage.setItem("ucp_user", JSON.stringify(userSession));
-      localStorage.setItem("ucp_token", `mock_token_${user.uuid}`);
-
+      // Store remember me preference
       if (values.rememberMe) {
         localStorage.setItem("ucp_remember", "true");
       }
 
-      toast.success(`Welcome back, ${user.rank} ${user.name}!`);
+      toast.success(`Welcome back, ${result.profile.rank} ${result.profile.name}!`);
 
-      // Role-based redirect
+      // Navigate to dashboard (auth context handles token storage via onAuthStateChange)
       router.navigate({ to: "/dashboard" });
-    } catch (error) {
-      toast.error("Sign in failed. Please try again.");
+    } catch (error: any) {
+      console.error("Login error:", error);
+      toast.error(error.message || "Sign in failed. Please try again.");
     } finally {
       setIsLoading(false);
     }
@@ -233,16 +212,16 @@ export default function SignIn() {
                 </p>
                 <div className="text-xs space-y-1">
                   <div>
-                    <span className="font-semibold">Adjt:</span> adjt@unit.army
-                    / password123
+                    <span className="font-semibold">Adjt:</span> adjt@unit.mil
+                    / Adjt@2025
                   </div>
                   <div>
                     <span className="font-semibold">IT JCO:</span>{" "}
-                    itjco@unit.army / password123
+                    itjco@unit.mil / ItJco@2025
                   </div>
                   <div>
-                    <span className="font-semibold">User:</span> user@unit.army
-                    / password123
+                    <span className="font-semibold">User:</span> user@unit.mil
+                    / User@2025
                   </div>
                 </div>
               </div>

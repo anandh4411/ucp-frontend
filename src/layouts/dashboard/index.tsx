@@ -6,25 +6,31 @@ import {
   footerNavItems,
   brandingConfig,
 } from "@/config/navigation";
-import { useLogout } from "@/api";
-import { getCurrentUser } from "@/guards/useAuthGuard";
+import { useAuth } from "@/context/auth-context";
+import { toast } from "sonner";
 
 export const DashboardLayout = ({
   children,
 }: {
   children: React.ReactNode;
 }) => {
-  const { mutate: logout } = useLogout();
+  const { logout, userProfile } = useAuth();
   const location = useLocation();
   const router = useRouter();
-  const user = getCurrentUser(); // Get current user
 
   const handleNavigate = (path: string) => {
     router.navigate({ to: path });
   };
 
-  const handleLogout = () => {
-    logout();
+  const handleLogout = async () => {
+    try {
+      await logout();
+      toast.success("Logged out successfully");
+      router.navigate({ to: "/sign-in" });
+    } catch (error) {
+      console.error("Logout error:", error);
+      toast.error("Failed to logout. Please try again.");
+    }
   };
 
   const isPathActive = (path: string) => {
@@ -40,7 +46,7 @@ export const DashboardLayout = ({
   };
 
   // Get navigation items based on current path and user role
-  const mainNavItems = getNavItems(location.pathname, user?.role);
+  const mainNavItems = getNavItems(location.pathname, userProfile?.role);
 
   return (
     <DashboardLayoutComponent
