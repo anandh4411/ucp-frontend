@@ -46,6 +46,9 @@ const uploadToCloudinary = async (
     xhr.addEventListener('load', () => {
       if (xhr.status === 200) {
         const response = JSON.parse(xhr.responseText);
+        // Use the URL exactly as Cloudinary returns it
+        // When uploading via /image/upload, all files are stored as "image" resource type
+        // and must be accessed via /image/upload/ URLs regardless of actual file type
         resolve(response.secure_url);
       } else {
         reject(new Error('Upload failed'));
@@ -56,9 +59,12 @@ const uploadToCloudinary = async (
       reject(new Error('Network error'));
     });
 
+    // Use 'image' endpoint for everything as it has public access configured
+    // Cloudinary will auto-detect and handle all file types properly
+    // This matches the working avatar upload behavior
     xhr.open(
       'POST',
-      `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/auto/upload`
+      `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`
     );
     xhr.send(formData);
   });

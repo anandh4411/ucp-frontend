@@ -50,7 +50,8 @@ import {
   incrementResourceDownloads,
   type Resource,
 } from "@/api/firebase/firestore";
-import { uploadResource, formatFileSize } from "@/api/cloudinary/storage";
+import { uploadResource } from "@/api/cloudinary/storage";
+import { compressImage, validateFileSize, validateFileType, formatFileSize } from "@/utils/fileCompression";
 
 const getFileType = (fileName: string): string => {
   const ext = fileName.split('.').pop()?.toLowerCase() || '';
@@ -332,8 +333,17 @@ export default function Resources() {
   // Handle download
   const handleDownload = async (resource: Resource) => {
     try {
+      // Increment download counter
       await incrementResourceDownloads(resource.id!);
-      window.open(resource.fileUrl, "_blank");
+
+      // Get Cloudinary URL with fl_attachment flag to force download
+      const downloadUrl = resource.fileUrl.includes('cloudinary.com')
+        ? resource.fileUrl.replace('/upload/', '/upload/fl_attachment/')
+        : resource.fileUrl;
+
+      // Open download URL
+      window.open(downloadUrl, '_blank');
+
       toast.success(`Downloading ${resource.fileName}`);
     } catch (error: any) {
       console.error("Download error:", error);
@@ -341,40 +351,87 @@ export default function Resources() {
     }
   };
 
+  // Handle view file
+  const handleViewFile = (resource: Resource) => {
+    // For PDFs and images, open directly in new tab
+    window.open(resource.fileUrl, '_blank', 'noopener,noreferrer');
+  };
+
   // Handle upload
   const handleUpload = async () => {
-    if (!formTitle.trim() || !formDescription.trim() || !formFile) {
-      toast.error("Please fill in all required fields and select a file");
+    // Validation
+    if (!formTitle.trim()) {
+      toast.error("Title is required");
+      return;
+    }
+    if (!formDescription.trim()) {
+      toast.error("Description is required");
+      return;
+    }
+    if (!formFile) {
+      toast.error("Please select a file");
+      return;
+    }
+
+    // File size validation (100MB max)
+    if (!validateFileSize(formFile, 100)) {
+      toast.error("File size must be less than 100MB");
       return;
     }
 
     setUploading(true);
     setUploadProgress(0);
+
     try {
+      let fileToUpload = formFile;
+
+      // Compress images before upload
+      if (formFile.type.startsWith('image/')) {
+        toast.info("Compressing image...");
+        try {
+          fileToUpload = await compressImage(formFile, 1920, 0.8);
+          toast.success(`Image compressed: ${formatFileSize(formFile.size)} → ${formatFileSize(fileToUpload.size)}`);
+        } catch (compressError) {
+          console.warn("Compression failed, uploading original:", compressError);
+          // Continue with original file if compression fails
+        }
+      }
+
       const resourceId = `res-${Date.now()}`;
-      const fileUrl = await uploadResource(resourceId, formFile, (progress) => {
+
+      // Upload to Cloudinary
+      const fileUrl = await uploadResource(resourceId, fileToUpload, (progress) => {
         setUploadProgress(progress.percentage);
       });
 
+      // Save to Firestore
       await createResource({
-        uuid: `res-${Date.now()}`,
-        title: formTitle,
-        description: formDescription,
+        uuid: resourceId,
+        title: formTitle.trim(),
+        description: formDescription.trim(),
         fileName: formFile.name,
         fileUrl,
-        fileSize: formFile.size,
+        fileSize: fileToUpload.size,
         fileType: getFileType(formFile.name) as any,
         category: formCategory as any,
         uploadedById: currentUser?.uuid || "",
         tags: formTags.split(",").map((tag) => tag.trim()).filter(Boolean),
       });
 
-      toast.success("Resource uploaded successfully");
+      toast.success("Resource uploaded successfully!");
       setUploadDialogOpen(false);
       resetForm();
     } catch (error: any) {
       console.error("Upload error:", error);
-      toast.error(error.message || "Failed to upload resource");
+
+      // Better error messages
+      if (error.message.includes('Network')) {
+        toast.error("Network error. Please check your connection and try again.");
+      } else if (error.message.includes('Cloudinary')) {
+        toast.error("File upload failed. Please try again.");
+      } else {
+        toast.error(error.message || "Failed to upload resource");
+      }
     } finally {
       setUploading(false);
       setUploadProgress(0);
@@ -782,6 +839,13 @@ export default function Resources() {
                 >
                   Close
                 </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => handleViewFile(selectedResource)}
+                >
+                  <Eye className="h-4 w-4 mr-2" />
+                  Open File
+                </Button>
                 <Button onClick={() => handleDownload(selectedResource)}>
                   <Download className="h-4 w-4 mr-2" />
                   Download
@@ -882,6 +946,22 @@ export default function Resources() {
             )}
           </div>
 
+          {/* Upload Progress */}
+          {uploading && uploadProgress > 0 && (
+            <div className="space-y-2 pt-4 border-t">
+              <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground">Uploading...</span>
+                <span className="font-medium">{Math.round(uploadProgress)}%</span>
+              </div>
+              <div className="w-full bg-muted rounded-full h-2">
+                <div
+                  className="bg-primary h-2 rounded-full transition-all duration-300"
+                  style={{ width: `${uploadProgress}%` }}
+                />
+              </div>
+            </div>
+          )}
+
           <DialogFooter>
             <Button
               variant="outline"
@@ -890,11 +970,20 @@ export default function Resources() {
                 setEditDialogOpen(false);
                 resetForm();
               }}
+              disabled={uploading || saving}
             >
               Cancel
             </Button>
-            <Button onClick={editDialogOpen ? handleUpdate : handleUpload}>
-              {editDialogOpen ? "Update" : "Upload"} Resource
+            <Button
+              onClick={editDialogOpen ? handleUpdate : handleUpload}
+              disabled={uploading || saving}
+            >
+              {(uploading || saving) && (
+                <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+              )}
+              {uploading ? `Uploading ${Math.round(uploadProgress)}%` :
+               saving ? "Saving..." :
+               editDialogOpen ? "Update Resource" : "Upload Resource"}
             </Button>
           </DialogFooter>
         </DialogContent>
