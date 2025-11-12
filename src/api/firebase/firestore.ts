@@ -90,6 +90,23 @@ export const getUserById = async (userId: string): Promise<UserProfile | null> =
   }
 };
 
+export const createUser = async (
+  user: Omit<UserProfile, 'createdAt' | 'updatedAt'>
+): Promise<string> => {
+  try {
+    const docRef = await addDoc(collection(db, 'users'), {
+      ...user,
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp(),
+    });
+
+    return docRef.id;
+  } catch (error) {
+    console.error('Create user error:', error);
+    throw error;
+  }
+};
+
 export const updateUser = async (
   userId: string,
   updates: Partial<UserProfile>
@@ -390,6 +407,46 @@ export const createConversation = async (
   }
 };
 
+export const updateMessage = async (
+  conversationId: string,
+  messageId: string,
+  content: string
+): Promise<void> => {
+  try {
+    const messageRef = doc(db, 'conversations', conversationId, 'messages', messageId);
+    await updateDoc(messageRef, {
+      content,
+      updatedAt: serverTimestamp(),
+    });
+  } catch (error) {
+    console.error('Update message error:', error);
+    throw error;
+  }
+};
+
+export const deleteMessage = async (
+  conversationId: string,
+  messageId: string
+): Promise<void> => {
+  try {
+    const messageRef = doc(db, 'conversations', conversationId, 'messages', messageId);
+    await deleteDoc(messageRef);
+  } catch (error) {
+    console.error('Delete message error:', error);
+    throw error;
+  }
+};
+
+export const deleteConversation = async (conversationId: string): Promise<void> => {
+  try {
+    const conversationRef = doc(db, 'conversations', conversationId);
+    await deleteDoc(conversationRef);
+  } catch (error) {
+    console.error('Delete conversation error:', error);
+    throw error;
+  }
+};
+
 export const markMessageAsRead = async (
   conversationId: string,
   messageId: string,
@@ -596,6 +653,22 @@ export const createResource = async (
     return docRef.id;
   } catch (error) {
     console.error('Create resource error:', error);
+    throw error;
+  }
+};
+
+export const updateResource = async (
+  resourceId: string,
+  updates: Partial<Resource>
+): Promise<void> => {
+  try {
+    const docRef = doc(db, 'resources', resourceId);
+    await updateDoc(docRef, {
+      ...updates,
+      updatedAt: serverTimestamp(),
+    });
+  } catch (error) {
+    console.error('Update resource error:', error);
     throw error;
   }
 };

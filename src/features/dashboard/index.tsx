@@ -17,6 +17,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useRouter } from "@tanstack/react-router";
+import { useFirebaseStats } from "@/hooks/useFirebaseStats";
 import dashboardData from "@/data/dashboard.json";
 
 // Stat Card Component
@@ -113,6 +114,7 @@ export default function Dashboard() {
   const router = useRouter();
   const [user, setUser] = useState<any>(null);
   const [dashData, setDashData] = useState<any>(null);
+  const stats = useFirebaseStats();
 
   useEffect(() => {
     const currentUser = getCurrentUser();
@@ -126,7 +128,7 @@ export default function Dashboard() {
     }
   }, []);
 
-  if (!user || !dashData) {
+  if (!user || !dashData || stats.loading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
         <div className="text-center">
@@ -173,13 +175,13 @@ export default function Dashboard() {
           />
           <StatCard
             title="Announcements"
-            value={dashData.stats.totalAnnouncements}
+            value={stats.totalAnnouncements}
             icon={Megaphone}
-            description={`${dashData.stats.unreadAnnouncements} unread`}
+            description="Total announcements"
           />
           <StatCard
             title="Upcoming Events"
-            value={dashData.stats.upcomingEvents}
+            value={stats.totalEvents}
             icon={Calendar}
             description="Next 7 days"
           />

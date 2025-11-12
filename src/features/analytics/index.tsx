@@ -16,6 +16,7 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useFirebaseStats } from "@/hooks/useFirebaseStats";
 import analyticsData from "@/data/analytics.json";
 
 // Stat Card Component
@@ -152,6 +153,7 @@ const SimplePieChart = ({ data, dataKey, valueKey }: any) => {
 
 export default function Analytics() {
   const [activeTab, setActiveTab] = useState("overview");
+  const stats = useFirebaseStats();
 
   return (
     <div className="space-y-6">
@@ -174,31 +176,27 @@ export default function Analytics() {
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <StatCard
           title="Total Users"
-          value={analyticsData.overview.totalUsers}
+          value={stats.loading ? "..." : stats.totalUsers}
           icon={Users}
-          description={`${analyticsData.overview.activeUsers} active users`}
-          trend="+12% from last month"
+          description={`${stats.activeUsers} active users`}
         />
         <StatCard
-          title="Total Messages"
-          value={analyticsData.overview.totalMessages}
+          title="Conversations"
+          value={stats.loading ? "..." : stats.totalConversations}
           icon={MessageSquare}
-          description="All time messages"
-          trend="+8% from last month"
+          description="All conversations"
         />
         <StatCard
           title="Announcements"
-          value={analyticsData.overview.totalAnnouncements}
+          value={stats.loading ? "..." : stats.totalAnnouncements}
           icon={Megaphone}
           description="Published announcements"
-          trend="+15% from last month"
         />
         <StatCard
           title="Resources Shared"
-          value={analyticsData.overview.totalResources}
+          value={stats.loading ? "..." : stats.totalResources}
           icon={FolderOpen}
           description="Documents & files"
-          trend="+5% from last month"
         />
       </div>
 

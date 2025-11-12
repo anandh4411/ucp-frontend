@@ -8,6 +8,8 @@ import {
   Send,
   Paperclip,
   MoreVertical,
+  Edit,
+  Trash2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -24,12 +26,13 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Label } from "@/components/ui/label";
 import { SelectDropdown } from "@/components/select-dropdown";
 import { getCurrentUser } from "@/guards/useAuthGuard";
 import { toast } from "sonner";
 import { subscribeToConversations, subscribeToMessages } from "@/api/firebase/realtime";
-import { createConversation, sendMessage, type Conversation, type Message, getUsers } from "@/api/firebase/firestore";
+import { createConversation, sendMessage, updateMessage, deleteMessage, deleteConversation, type Conversation, type Message, getUsers } from "@/api/firebase/firestore";
 import { type UserProfile } from "@/api/firebase/auth";
 
 export function MessagesPage() {
@@ -40,6 +43,8 @@ export function MessagesPage() {
   const [messageText, setMessageText] = useState("");
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
+  const [editingMessage, setEditingMessage] = useState<Message | null>(null);
+  const [editText, setEditText] = useState("");
 
   // Firebase data
   const [conversations, setConversations] = useState<Conversation[]>([]);
@@ -120,21 +125,65 @@ export function MessagesPage() {
 
     setSending(true);
     try {
-      await sendMessage(selectedConversation, {
-        uuid: `msg-${Date.now()}`,
-        conversationId: selectedConversation,
-        senderId: currentUser?.uuid || "",
-        content: messageText,
-        isRead: false,
-        readBy: [currentUser?.uuid || ""],
-      });
-      setMessageText("");
-      toast.success("Message sent successfully");
+      if (editingMessage) {
+        // Update existing message
+        await updateMessage(selectedConversation, editingMessage.id!, messageText);
+        setEditingMessage(null);
+        setMessageText("");
+        toast.success("Message updated successfully");
+      } else {
+        // Send new message
+        await sendMessage(selectedConversation, {
+          uuid: `msg-${Date.now()}`,
+          conversationId: selectedConversation,
+          senderId: currentUser?.uuid || "",
+          content: messageText,
+          isRead: false,
+          readBy: [currentUser?.uuid || ""],
+        });
+        setMessageText("");
+        toast.success("Message sent successfully");
+      }
     } catch (error: any) {
       console.error("Send message error:", error);
       toast.error(error.message || "Failed to send message");
     } finally {
       setSending(false);
+    }
+  };
+
+  const handleEditMessage = (message: Message) => {
+    setEditingMessage(message);
+    setMessageText(message.content);
+  };
+
+  const handleCancelEdit = () => {
+    setEditingMessage(null);
+    setMessageText("");
+  };
+
+  const handleDeleteMessage = async (message: Message) => {
+    if (!window.confirm("Delete this message?")) return;
+
+    try {
+      await deleteMessage(selectedConversation!, message.id!);
+      toast.success("Message deleted");
+    } catch (error: any) {
+      console.error("Delete message error:", error);
+      toast.error(error.message || "Failed to delete message");
+    }
+  };
+
+  const handleDeleteConversation = async () => {
+    if (!window.confirm("Delete this entire conversation?")) return;
+
+    try {
+      await deleteConversation(selectedConversation!);
+      setSelectedConversation(null);
+      toast.success("Conversation deleted");
+    } catch (error: any) {
+      console.error("Delete conversation error:", error);
+      toast.error(error.message || "Failed to delete conversation");
     }
   };
 
@@ -336,9 +385,19 @@ export function MessagesPage() {
                       );
                     })()}
                   </div>
-                  <Button variant="ghost" size="icon">
-                    <MoreVertical className="h-4 w-4" />
-                  </Button>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" size="icon">
+                        <MoreVertical className="h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem onClick={handleDeleteConversation} className="text-destructive">
+                        <Trash2 className="mr-2 h-4 w-4" />
+                        Delete Conversation
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                 </div>
               </div>
 
@@ -352,7 +411,7 @@ export function MessagesPage() {
                     return (
                       <div
                         key={message.id}
-                        className={`flex ${isCurrentUser ? "justify-end" : "justify-start"}`}
+                        className={`flex group ${isCurrentUser ? "justify-end" : "justify-start"}`}
                       >
                         <div className={`max-w-[70%] ${isCurrentUser ? "order-2" : "order-1"}`}>
                           {!isCurrentUser && (
@@ -360,12 +419,34 @@ export function MessagesPage() {
                               {sender?.rank} {sender?.name}
                             </p>
                           )}
-                          <div
-                            className={`rounded-lg p-3 ${
-                              isCurrentUser ? "bg-primary text-primary-foreground" : "bg-muted"
-                            }`}
-                          >
-                            <p className="text-sm">{message.content}</p>
+                          <div className="relative">
+                            <div
+                              className={`rounded-lg p-3 ${
+                                isCurrentUser ? "bg-primary text-primary-foreground" : "bg-muted"
+                              }`}
+                            >
+                              <p className="text-sm">{message.content}</p>
+                            </div>
+                            {isCurrentUser && (
+                              <div className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity flex gap-1">
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-6 w-6"
+                                  onClick={() => handleEditMessage(message)}
+                                >
+                                  <Edit className="h-3 w-3" />
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-6 w-6"
+                                  onClick={() => handleDeleteMessage(message)}
+                                >
+                                  <Trash2 className="h-3 w-3" />
+                                </Button>
+                              </div>
+                            )}
                           </div>
                           <p className="text-xs text-muted-foreground mt-1">
                             {message.timestamp?.toLocaleString()}
@@ -379,6 +460,14 @@ export function MessagesPage() {
 
               {/* Reply Input */}
               <div className="p-4 border-t">
+                {editingMessage && (
+                  <div className="flex items-center justify-between mb-2 p-2 bg-muted rounded">
+                    <span className="text-sm text-muted-foreground">Editing message</span>
+                    <Button variant="ghost" size="sm" onClick={handleCancelEdit}>
+                      Cancel
+                    </Button>
+                  </div>
+                )}
                 <div className="flex gap-2">
                   <Textarea
                     placeholder="Type your message..."

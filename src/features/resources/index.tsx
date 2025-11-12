@@ -45,11 +45,34 @@ import { toast } from "sonner";
 import { subscribeToResources } from "@/api/firebase/realtime";
 import {
   createResource,
+  updateResource,
   deleteResource,
   incrementResourceDownloads,
   type Resource,
 } from "@/api/firebase/firestore";
-import { uploadFile, getFileType, formatFileSize } from "@/api/firebase/storage";
+import { uploadResource, formatFileSize } from "@/api/cloudinary/storage";
+
+const getFileType = (fileName: string): string => {
+  const ext = fileName.split('.').pop()?.toLowerCase() || '';
+  const typeMap: Record<string, string> = {
+    pdf: 'pdf',
+    doc: 'document',
+    docx: 'document',
+    txt: 'document',
+    xls: 'spreadsheet',
+    xlsx: 'spreadsheet',
+    csv: 'spreadsheet',
+    jpg: 'image',
+    jpeg: 'image',
+    png: 'image',
+    gif: 'image',
+    mp4: 'video',
+    mov: 'video',
+    zip: 'archive',
+    rar: 'archive',
+  };
+  return typeMap[ext] || 'document';
+};
 import { getUsers } from "@/api/firebase/firestore";
 
 // Dummy data
@@ -196,6 +219,7 @@ export default function Resources() {
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
+  const [saving, setSaving] = useState(false);
 
   // Firebase data
   const [resources, setResources] = useState<Resource[]>([]);
@@ -327,9 +351,9 @@ export default function Resources() {
     setUploading(true);
     setUploadProgress(0);
     try {
-      const filePath = `resources/${Date.now()}_${formFile.name}`;
-      const fileUrl = await uploadFile(formFile, filePath, (progress) => {
-        setUploadProgress(progress.progress);
+      const resourceId = `res-${Date.now()}`;
+      const fileUrl = await uploadResource(resourceId, formFile, (progress) => {
+        setUploadProgress(progress.percentage);
       });
 
       await createResource({
@@ -376,16 +400,30 @@ export default function Resources() {
     setDeleteDialogOpen(true);
   };
 
-  const handleUpdate = () => {
-    if (!formTitle.trim() || !formDescription.trim()) {
+  const handleUpdate = async () => {
+    if (!formTitle.trim() || !formDescription.trim() || !selectedResource) {
       toast.error("Please fill in all required fields");
       return;
     }
 
-    toast.success("Resource updated successfully");
-    setEditDialogOpen(false);
-    resetForm();
-    // In real app: await api.updateResource()
+    setSaving(true);
+    try {
+      await updateResource(selectedResource.id!, {
+        title: formTitle,
+        description: formDescription,
+        category: formCategory as any,
+        tags: formTags.split(",").map((tag) => tag.trim()).filter(Boolean),
+      });
+
+      toast.success("Resource updated successfully");
+      setEditDialogOpen(false);
+      resetForm();
+    } catch (error: any) {
+      console.error("Update error:", error);
+      toast.error(error.message || "Failed to update resource");
+    } finally {
+      setSaving(false);
+    }
   };
 
   const confirmDelete = async () => {

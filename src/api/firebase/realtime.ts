@@ -17,6 +17,56 @@ import type {
   CalendarEvent,
   Resource,
 } from './firestore';
+import type { UserProfile } from './auth';
+
+// ============================================
+// USERS LISTENER
+// ============================================
+
+export type UsersCallback = (users: UserProfile[]) => void;
+
+export const subscribeToUsers = (
+  callback: UsersCallback,
+  filters?: {
+    role?: string;
+    isActive?: boolean;
+  }
+): Unsubscribe => {
+  try {
+    const constraints: QueryConstraint[] = [];
+
+    if (filters?.role) {
+      constraints.push(where('role', '==', filters.role));
+    }
+
+    if (filters?.isActive !== undefined) {
+      constraints.push(where('isActive', '==', filters.isActive));
+    }
+
+    constraints.push(orderBy('createdAt', 'desc'));
+
+    const q = query(collection(db, 'users'), ...constraints);
+
+    return onSnapshot(
+      q,
+      (snapshot) => {
+        const users = snapshot.docs.map((doc) => ({
+          ...doc.data(),
+          createdAt: doc.data().createdAt?.toDate(),
+          updatedAt: doc.data().updatedAt?.toDate(),
+        })) as UserProfile[];
+
+        callback(users);
+      },
+      (error) => {
+        console.error('Users listener error:', error);
+      }
+    );
+  } catch (error) {
+    console.error('Subscribe to users error:', error);
+    return () => {};
+  }
+};
 
 // ============================================
 // ANNOUNCEMENTS LISTENER

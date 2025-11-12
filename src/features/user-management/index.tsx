@@ -1,66 +1,30 @@
-import { useState, useMemo } from "react";
-import {
-  Users,
-  Plus,
-  Search,
-  Edit,
-  Trash2,
-  Eye,
-  MoreVertical,
-  Shield,
-  UserCheck,
-  UserX,
-  Mail,
-  Phone,
-  Building,
-  AlertCircle,
-} from "lucide-react";
+import { useState, useEffect } from "react";
+import { Plus, Search, Edit, Trash2, Eye, MoreVertical, Shield, UserCheck, UserX, Upload, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent } from "@/components/ui/card";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { SelectDropdown } from "@/components/select-dropdown";
-import { DataTable, useTableState } from "@/components/elements/app-data-table";
-import { ColumnDef } from "@tanstack/react-table";
-import {
-  selectColumn,
-  customColumn,
-  actionsColumn,
-} from "@/components/elements/app-data-table/helpers/column-helpers";
 import { getCurrentUser, hasRole } from "@/guards/useAuthGuard";
 import { toast } from "sonner";
-import usersData from "@/data/users.json";
+import { collection, onSnapshot, query, orderBy } from "firebase/firestore";
+import { db, auth } from "@/config/firebase";
+import { createUserWithEmailAndPassword } from "firebase/auth";
+import { doc, setDoc, updateDoc, deleteDoc, serverTimestamp } from "firebase/firestore";
+import { uploadAvatar } from "@/api/cloudinary/storage";
 
-// Ranks dropdown options
 const ranks = [
-  { label: "Major", value: "major" },
-  { label: "Captain", value: "captain" },
-  { label: "Lieutenant", value: "lieutenant" },
-  { label: "Subedar Major", value: "subedar_major" },
-  { label: "Subedar", value: "subedar" },
-  { label: "Naib Subedar", value: "naib_subedar" },
-  { label: "Havildar", value: "havildar" },
-  { label: "Naik", value: "naik" },
-  { label: "Lance Naik", value: "lance_naik" },
-  { label: "Sepoy", value: "sepoy" },
+  { label: "Major", value: "Major" },
+  { label: "Captain", value: "Captain" },
+  { label: "Lieutenant", value: "Lieutenant" },
+  { label: "Subedar", value: "Subedar" },
+  { label: "Naik", value: "Naik" },
+  { label: "Sepoy", value: "Sepoy" },
 ];
 
 const roles = [
@@ -70,7 +34,7 @@ const roles = [
 ];
 
 type User = {
-  id: string;
+  id?: string;
   uuid: string;
   name: string;
   email: string;
@@ -78,575 +42,473 @@ type User = {
   rank: string;
   serviceNumber: string;
   unit: string;
+  avatar?: string;
   isActive: boolean;
-  createdAt: string;
+  createdAt: any;
 };
 
 export default function UserManagement() {
   const currentUser = getCurrentUser();
   const canManage = hasRole(["adjt", "it_jco"]);
 
-  // Redirect if not authorized
+  const [users, setUsers] = useState<User[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [showCreateDialog, setShowCreateDialog] = useState(false);
+  const [showEditDialog, setShowEditDialog] = useState(false);
+  const [showViewDialog, setShowViewDialog] = useState(false);
+  const [editingUser, setEditingUser] = useState<User | null>(null);
+  const [viewingUser, setViewingUser] = useState<User | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [avatarFile, setAvatarFile] = useState<File | null>(null);
+  const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
+
+  const [formData, setFormData] = useState({
+    name: "",
+    email: "",
+    password: "",
+    rank: "",
+    role: "user",
+    serviceNumber: "",
+    unit: "",
+    isActive: true,
+  });
+
+  // Subscribe to real-time users
+  useEffect(() => {
+    const q = query(collection(db, "users"), orderBy("createdAt", "desc"));
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const usersData = snapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+        createdAt: doc.data().createdAt?.toDate(),
+      })) as User[];
+      setUsers(usersData);
+      setLoading(false);
+    });
+
+    return () => unsubscribe();
+  }, []);
+
+  const compressImage = (file: File): Promise<File> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = (event) => {
+        const img = new Image();
+        img.src = event.target?.result as string;
+        img.onload = () => {
+          const canvas = document.createElement("canvas");
+          const ctx = canvas.getContext("2d");
+          let width = img.width;
+          let height = img.height;
+          const maxSize = 800;
+
+          if (width > height && width > maxSize) {
+            height = (height * maxSize) / width;
+            width = maxSize;
+          } else if (height > maxSize) {
+            width = (width * maxSize) / height;
+            height = maxSize;
+          }
+
+          canvas.width = width;
+          canvas.height = height;
+          ctx?.drawImage(img, 0, 0, width, height);
+
+          canvas.toBlob(
+            (blob) => {
+              if (blob) {
+                resolve(new File([blob], file.name, { type: "image/jpeg" }));
+              } else {
+                reject(new Error("Compression failed"));
+              }
+            },
+            "image/jpeg",
+            0.7
+          );
+        };
+      };
+    });
+  };
+
+  const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (!file.type.startsWith("image/")) {
+        toast.error("File must be an image");
+        return;
+      }
+      try {
+        const compressedFile = await compressImage(file);
+        setAvatarFile(compressedFile);
+        setAvatarPreview(URL.createObjectURL(compressedFile));
+      } catch (error) {
+        toast.error("Failed to process image");
+      }
+    }
+  };
+
+  const removeAvatar = () => {
+    setAvatarFile(null);
+    setAvatarPreview(null);
+  };
+
+  const resetForm = () => {
+    setFormData({
+      name: "",
+      email: "",
+      password: "",
+      rank: "",
+      role: "user",
+      serviceNumber: "",
+      unit: "",
+      isActive: true,
+    });
+    setAvatarFile(null);
+    setAvatarPreview(null);
+    setEditingUser(null);
+  };
+
+  const handleCreateUser = async () => {
+    if (!formData.name || !formData.email || !formData.password || !formData.rank || !formData.serviceNumber || !formData.unit) {
+      toast.error("All fields are required");
+      return;
+    }
+
+    setSaving(true);
+    try {
+      // Create auth user
+      const userCredential = await createUserWithEmailAndPassword(auth, formData.email, formData.password);
+      const user = userCredential.user;
+
+      // Upload avatar if provided
+      let avatarUrl = "";
+      if (avatarFile) {
+        try {
+          avatarUrl = await uploadAvatar(user.uid, avatarFile);
+        } catch (error) {
+          console.error("Avatar upload failed:", error);
+        }
+      }
+
+      // Create Firestore profile
+      await setDoc(doc(db, "users", user.uid), {
+        uuid: user.uid,
+        email: formData.email,
+        name: formData.name,
+        rank: formData.rank,
+        role: formData.role,
+        serviceNumber: formData.serviceNumber,
+        unit: formData.unit,
+        avatar: avatarUrl || null,
+        isActive: formData.isActive,
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+      });
+
+      // Create user preferences
+      await setDoc(doc(db, "user_preferences", user.uid), {
+        userId: user.uid,
+        theme: "system",
+        colorScheme: "blue",
+        fontFamily: "inter",
+        notificationSettings: {
+          messages: true,
+          announcements: true,
+          events: true,
+          email: true,
+          push: true,
+        },
+        updatedAt: serverTimestamp(),
+      });
+
+      toast.success("User created successfully");
+      setShowCreateDialog(false);
+      resetForm();
+    } catch (error: any) {
+      console.error("Create user error:", error);
+      if (error.code === "auth/email-already-in-use") {
+        toast.error("Email already in use");
+      } else {
+        toast.error(error.message || "Failed to create user");
+      }
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleUpdateUser = async () => {
+    if (!editingUser || !formData.name || !formData.rank || !formData.serviceNumber || !formData.unit) {
+      toast.error("All fields are required");
+      return;
+    }
+
+    setSaving(true);
+    try {
+      let avatarUrl = editingUser.avatar;
+
+      // Upload new avatar if changed
+      if (avatarFile) {
+        try {
+          avatarUrl = await uploadAvatar(editingUser.uuid, avatarFile);
+        } catch (error) {
+          console.error("Avatar upload failed:", error);
+        }
+      }
+
+      await updateDoc(doc(db, "users", editingUser.id!), {
+        name: formData.name,
+        rank: formData.rank,
+        role: formData.role,
+        serviceNumber: formData.serviceNumber,
+        unit: formData.unit,
+        avatar: avatarUrl,
+        isActive: formData.isActive,
+        updatedAt: serverTimestamp(),
+      });
+
+      toast.success("User updated successfully");
+      setShowEditDialog(false);
+      resetForm();
+    } catch (error: any) {
+      console.error("Update user error:", error);
+      toast.error(error.message || "Failed to update user");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleDeleteUser = async (user: User) => {
+    if (user.uuid === currentUser?.uuid) {
+      toast.error("Cannot delete your own account");
+      return;
+    }
+
+    if (!window.confirm(`Delete user ${user.name}?`)) return;
+
+    try {
+      await deleteDoc(doc(db, "users", user.id!));
+      toast.success("User deleted successfully");
+    } catch (error: any) {
+      console.error("Delete user error:", error);
+      toast.error(error.message || "Failed to delete user");
+    }
+  };
+
+  const openCreateDialog = () => {
+    resetForm();
+    setShowCreateDialog(true);
+  };
+
+  const openEditDialog = (user: User) => {
+    setFormData({
+      name: user.name,
+      email: user.email,
+      password: "",
+      rank: user.rank,
+      role: user.role,
+      serviceNumber: user.serviceNumber,
+      unit: user.unit,
+      isActive: user.isActive,
+    });
+    setAvatarPreview(user.avatar || null);
+    setEditingUser(user);
+    setShowEditDialog(true);
+  };
+
+  const openViewDialog = (user: User) => {
+    setViewingUser(user);
+    setShowViewDialog(true);
+  };
+
   if (!canManage) {
     return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <Card className="w-full max-w-md">
-          <CardContent className="flex flex-col items-center justify-center py-12">
-            <Shield className="h-12 w-12 text-destructive mb-4" />
-            <h3 className="text-lg font-semibold mb-2">Access Denied</h3>
-            <p className="text-muted-foreground text-center">
-              You don't have permission to access user management.
-            </p>
-          </CardContent>
+      <div className="flex items-center justify-center h-96">
+        <Card className="p-12 text-center">
+          <Shield className="h-12 w-12 text-destructive mx-auto mb-4" />
+          <h3 className="text-lg font-semibold mb-2">Access Denied</h3>
+          <p className="text-muted-foreground">You don't have permission to manage users.</p>
         </Card>
       </div>
     );
   }
 
-  const [searchQuery, setSearchQuery] = useState("");
-  const [selectedUser, setSelectedUser] = useState<User | null>(null);
-  const [viewDialogOpen, setViewDialogOpen] = useState(false);
-  const [createDialogOpen, setCreateDialogOpen] = useState(false);
-  const [editDialogOpen, setEditDialogOpen] = useState(false);
-  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-
-  // Form state
-  const [formName, setFormName] = useState("");
-  const [formEmail, setFormEmail] = useState("");
-  const [formRank, setFormRank] = useState("");
-  const [formServiceNumber, setFormServiceNumber] = useState("");
-  const [formUnit, setFormUnit] = useState("");
-  const [formRole, setFormRole] = useState("user");
-  const [formActive, setFormActive] = useState(true);
-
-  // Table state
-  const tableState = useTableState<User>({ debounceMs: 300 });
-
-  // Filter users
-  const filteredUsers = useMemo(() => {
-    return usersData.filter((user) => {
-      const searchLower = tableState.state.search.toLowerCase();
-      return (
-        user.name.toLowerCase().includes(searchLower) ||
-        user.email.toLowerCase().includes(searchLower) ||
-        user.rank.toLowerCase().includes(searchLower) ||
-        user.serviceNumber.toLowerCase().includes(searchLower)
-      );
-    });
-  }, [tableState.state.search]);
-
-  // Get initials
-  const getInitials = (name: string) => {
-    return name
-      .split(" ")
-      .map((n) => n[0])
-      .join("")
-      .toUpperCase()
-      .slice(0, 2);
-  };
-
-  // Get role badge variant
-  const getRoleBadge = (role: string) => {
-    switch (role) {
-      case "adjt":
-        return { label: "Adjutant", variant: "default" as const };
-      case "it_jco":
-        return { label: "IT JCO", variant: "secondary" as const };
-      default:
-        return { label: "User", variant: "outline" as const };
-    }
-  };
-
-  // Handle view
-  const handleView = (user: User) => {
-    setSelectedUser(user);
-    setViewDialogOpen(true);
-  };
-
-  // Handle create
-  const handleCreate = () => {
-    if (
-      !formName.trim() ||
-      !formEmail.trim() ||
-      !formRank ||
-      !formServiceNumber.trim() ||
-      !formUnit.trim()
-    ) {
-      toast.error("Please fill in all required fields");
-      return;
-    }
-
-    // Check if email exists
-    if (usersData.some((u) => u.email === formEmail)) {
-      toast.error("Email already exists");
-      return;
-    }
-
-    // Check if service number exists
-    if (usersData.some((u) => u.serviceNumber === formServiceNumber)) {
-      toast.error("Service number already exists");
-      return;
-    }
-
-    toast.success("User created successfully");
-    setCreateDialogOpen(false);
-    resetForm();
-    // In real app: await api.createUser()
-  };
-
-  // Handle edit
-  const handleEdit = (user: User) => {
-    setSelectedUser(user);
-    setFormName(user.name);
-    setFormEmail(user.email);
-    setFormRank(user.rank);
-    setFormServiceNumber(user.serviceNumber);
-    setFormUnit(user.unit);
-    setFormRole(user.role);
-    setFormActive(user.isActive);
-    setEditDialogOpen(true);
-  };
-
-  const handleUpdate = () => {
-    if (
-      !formName.trim() ||
-      !formEmail.trim() ||
-      !formRank ||
-      !formServiceNumber.trim() ||
-      !formUnit.trim()
-    ) {
-      toast.error("Please fill in all required fields");
-      return;
-    }
-
-    toast.success("User updated successfully");
-    setEditDialogOpen(false);
-    resetForm();
-    // In real app: await api.updateUser()
-  };
-
-  // Handle delete
-  const handleDelete = (user: User) => {
-    // Prevent self-deletion
-    if (user.id === currentUser?.id) {
-      toast.error("You cannot delete your own account");
-      return;
-    }
-
-    setSelectedUser(user);
-    setDeleteDialogOpen(true);
-  };
-
-  const confirmDelete = () => {
-    toast.success("User deleted successfully");
-    setDeleteDialogOpen(false);
-    setSelectedUser(null);
-    // In real app: await api.deleteUser()
-  };
-
-  // Handle toggle status
-  const handleToggleStatus = (user: User) => {
-    if (user.id === currentUser?.id) {
-      toast.error("You cannot deactivate your own account");
-      return;
-    }
-
-    const newStatus = !user.isActive;
-    toast.success(
-      `User ${newStatus ? "activated" : "deactivated"} successfully`
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-96">
+        <div className="text-muted-foreground">Loading users...</div>
+      </div>
     );
-    // In real app: await api.toggleUserStatus(user.id)
-  };
+  }
 
-  // Reset form
-  const resetForm = () => {
-    setFormName("");
-    setFormEmail("");
-    setFormRank("");
-    setFormServiceNumber("");
-    setFormUnit("");
-    setFormRole("user");
-    setFormActive(true);
-    setSelectedUser(null);
-  };
-
-  // Define columns
-  const createColumns = (
-    onView: (user: User) => void,
-    onEdit: (user: User) => void,
-    onDelete: (user: User) => void,
-    onToggleStatus: (user: User) => void
-  ): ColumnDef<User>[] => {
-    return [
-      selectColumn<User>(),
-
-      customColumn<User>("name", "Name", (value, row) => (
-        <div className="flex items-center gap-3">
-          <Avatar className="h-8 w-8">
-            <AvatarFallback className="bg-primary/20 text-primary text-xs font-semibold">
-              {getInitials(value || "")}
-            </AvatarFallback>
-          </Avatar>
-          <div>
-            <div className="font-medium">{value}</div>
-            <div className="text-xs text-muted-foreground">{row.rank}</div>
-          </div>
-        </div>
-      )),
-
-      customColumn<User>("email", "Email", (value) => (
-        <div className="flex items-center gap-2">
-          <Mail className="h-3 w-3 text-muted-foreground" />
-          <span className="text-sm">{value}</span>
-        </div>
-      )),
-
-      customColumn<User>("serviceNumber", "Service Number", (value) => (
-        <span className="font-mono text-sm">{value}</span>
-      )),
-
-      customColumn<User>("unit", "Unit", (value) => (
-        <div className="flex items-center gap-2">
-          <Building className="h-3 w-3 text-muted-foreground" />
-          <span className="text-sm">{value}</span>
-        </div>
-      )),
-
-      customColumn<User>("role", "Role", (value) => {
-        const badge = getRoleBadge(value);
-        return <Badge variant={badge.variant}>{badge.label}</Badge>;
-      }),
-
-      customColumn<User>("isActive", "Status", (value, row) => (
-        <div className="flex items-center gap-2">
-          <Badge variant={value ? "default" : "secondary"}>
-            {value ? "Active" : "Inactive"}
-          </Badge>
-          <Button
-            variant="ghost"
-            size="sm"
-            className="h-6 px-2"
-            onClick={() => onToggleStatus(row)}
-          >
-            {value ? (
-              <UserX className="h-3 w-3" />
-            ) : (
-              <UserCheck className="h-3 w-3" />
-            )}
-          </Button>
-        </div>
-      )),
-
-      // Custom actions column
-      {
-        id: "actions",
-        header: "Actions",
-        cell: ({ row }) => {
-          const user = row.original;
-
-          return (
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon" className="h-8 w-8">
-                  <MoreVertical className="h-4 w-4" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem onClick={() => onView(user)}>
-                  <Eye className="h-4 w-4 mr-2" />
-                  View Details
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => onEdit(user)}>
-                  <Edit className="h-4 w-4 mr-2" />
-                  Edit
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem
-                  onClick={() => onDelete(user)}
-                  className="text-destructive"
-                >
-                  <Trash2 className="h-4 w-4 mr-2" />
-                  Delete
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          );
-        },
-      },
-    ];
-  };
-
-  const columns = useMemo(
-    () =>
-      createColumns(handleView, handleEdit, handleDelete, handleToggleStatus),
-    []
+  const filteredUsers = users.filter(
+    (u) =>
+      u.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      u.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      u.serviceNumber.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   return (
-    <div className="space-y-6">
+    <div className="p-6 space-y-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+      <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">User Management</h1>
-          <p className="text-muted-foreground">
-            Manage unit personnel accounts and permissions
-          </p>
+          <h1 className="text-3xl font-bold">User Management</h1>
+          <p className="text-muted-foreground">Manage unit personnel accounts</p>
         </div>
-        <Button onClick={() => setCreateDialogOpen(true)}>
-          <Plus className="mr-2 h-4 w-4" />
-          Add User
+        <Button onClick={openCreateDialog}>
+          <Plus className="mr-2 h-4 w-4" /> Create User
         </Button>
       </div>
 
-      {/* Stats Cards */}
-      <div className="grid gap-4 md:grid-cols-4">
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">Total Users</p>
-                <p className="text-2xl font-bold">{usersData.length}</p>
-              </div>
-              <Users className="h-8 w-8 text-muted-foreground" />
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">Active Users</p>
-                <p className="text-2xl font-bold">
-                  {usersData.filter((u) => u.isActive).length}
-                </p>
-              </div>
-              <UserCheck className="h-8 w-8 text-green-600" />
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">Administrators</p>
-                <p className="text-2xl font-bold">
-                  {
-                    usersData.filter(
-                      (u) => u.role === "adjt" || u.role === "it_jco"
-                    ).length
-                  }
-                </p>
-              </div>
-              <Shield className="h-8 w-8 text-primary" />
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">Inactive Users</p>
-                <p className="text-2xl font-bold">
-                  {usersData.filter((u) => !u.isActive).length}
-                </p>
-              </div>
-              <UserX className="h-8 w-8 text-muted-foreground" />
-            </div>
-          </CardContent>
-        </Card>
+      {/* Search */}
+      <div className="relative">
+        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+        <Input
+          placeholder="Search users..."
+          className="pl-10"
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+        />
       </div>
 
-      {/* Data Table */}
-      <DataTable
-        data={filteredUsers as User[]}
-        columns={columns}
-        config={{
-          search: {
-            enabled: true,
-            placeholder: "Search users by name, email, or service number...",
-            columnKey: "name",
-          },
-          pagination: {
-            enabled: true,
-            defaultPageSize: 10,
-          },
-          selection: { enabled: true },
-          sorting: {
-            enabled: true,
-            defaultSort: { columnKey: "name", desc: false },
-          },
-          viewOptions: { enabled: true },
-          emptyStateMessage: "No users found.",
-          state: {
-            sorting: tableState.state.sorting,
-            columnFilters: tableState.state.filters,
-            pagination: tableState.state.pagination,
-          },
-        }}
-        callbacks={{
-          onSearch: tableState.updateSearch,
-          onFiltersChange: tableState.updateFilters,
-          onSortingChange: tableState.updateSorting,
-          onRowSelectionChange: tableState.updateSelection,
-          onPaginationChange: tableState.updatePagination,
-        }}
-      />
-
-      {/* View Dialog */}
-      <Dialog open={viewDialogOpen} onOpenChange={setViewDialogOpen}>
-        <DialogContent className="sm:max-w-2xl">
-          {selectedUser && (
-            <>
-              <DialogHeader>
-                <DialogTitle className="flex items-center gap-3">
-                  <Avatar className="h-10 w-10">
-                    <AvatarFallback className="bg-primary/20 text-primary text-sm font-semibold">
-                      {getInitials(selectedUser.name)}
-                    </AvatarFallback>
+      {/* Users Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        {filteredUsers.map((user) => (
+          <Card key={user.id} className="hover:shadow-md transition-shadow">
+            <CardHeader className="pb-3">
+              <div className="flex items-start justify-between">
+                <div className="flex items-start gap-3 flex-1">
+                  <Avatar className="h-12 w-12">
+                    {user.avatar && <AvatarImage src={user.avatar} />}
+                    <AvatarFallback>{user.name.slice(0, 2).toUpperCase()}</AvatarFallback>
                   </Avatar>
-                  <div>
-                    <div>{selectedUser.name}</div>
-                    <div className="text-sm font-normal text-muted-foreground">
-                      {selectedUser.rank}
+                  <div className="flex-1 min-w-0">
+                    <h3 className="font-semibold truncate">{user.name}</h3>
+                    <p className="text-sm text-muted-foreground truncate">{user.email}</p>
+                    <div className="flex gap-2 mt-2">
+                      <Badge variant="outline" className="text-xs">
+                        {user.rank}
+                      </Badge>
+                      <Badge variant="secondary" className="text-xs">
+                        {user.role}
+                      </Badge>
                     </div>
-                  </div>
-                </DialogTitle>
-                <DialogDescription>
-                  <div className="flex items-center gap-2 mt-2">
-                    <Badge variant={getRoleBadge(selectedUser.role).variant}>
-                      {getRoleBadge(selectedUser.role).label}
-                    </Badge>
-                    <Badge
-                      variant={selectedUser.isActive ? "default" : "secondary"}
-                    >
-                      {selectedUser.isActive ? "Active" : "Inactive"}
-                    </Badge>
-                  </div>
-                </DialogDescription>
-              </DialogHeader>
-
-              <div className="space-y-4">
-                <div className="grid grid-cols-2 gap-4 text-sm">
-                  <div>
-                    <span className="text-muted-foreground">Email:</span>
-                    <div className="flex items-center gap-2 mt-1">
-                      <Mail className="h-4 w-4 text-muted-foreground" />
-                      <p className="font-medium">{selectedUser.email}</p>
-                    </div>
-                  </div>
-
-                  <div>
-                    <span className="text-muted-foreground">
-                      Service Number:
-                    </span>
-                    <p className="font-medium font-mono mt-1">
-                      {selectedUser.serviceNumber}
-                    </p>
-                  </div>
-
-                  <div>
-                    <span className="text-muted-foreground">Unit:</span>
-                    <div className="flex items-center gap-2 mt-1">
-                      <Building className="h-4 w-4 text-muted-foreground" />
-                      <p className="font-medium">{selectedUser.unit}</p>
-                    </div>
-                  </div>
-
-                  <div>
-                    <span className="text-muted-foreground">Joined:</span>
-                    <p className="font-medium mt-1">
-                      {new Date(selectedUser.createdAt).toLocaleDateString()}
-                    </p>
                   </div>
                 </div>
-
-                <div className="pt-4 border-t">
-                  <h4 className="text-sm font-semibold mb-2">Permissions</h4>
-                  <div className="space-y-2">
-                    {selectedUser.role === "adjt" && (
-                      <div className="flex items-center gap-2 text-sm">
-                        <Shield className="h-4 w-4 text-primary" />
-                        <span>Full administrative access</span>
-                      </div>
-                    )}
-                    {selectedUser.role === "it_jco" && (
-                      <div className="flex items-center gap-2 text-sm">
-                        <Shield className="h-4 w-4 text-primary" />
-                        <span>User management and system administration</span>
-                      </div>
-                    )}
-                    {selectedUser.role === "user" && (
-                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                        <Users className="h-4 w-4" />
-                        <span>Standard user access</span>
-                      </div>
-                    )}
-                  </div>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="icon">
+                      <MoreVertical className="h-4 w-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem onClick={() => openViewDialog(user)}>
+                      <Eye className="mr-2 h-4 w-4" /> View
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => openEditDialog(user)}>
+                      <Edit className="mr-2 h-4 w-4" /> Edit
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => handleDeleteUser(user)} className="text-destructive">
+                      <Trash2 className="mr-2 h-4 w-4" /> Delete
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
+            </CardHeader>
+            <CardContent className="pt-0">
+              <div className="space-y-1 text-sm">
+                <div className="flex items-center gap-2">
+                  <span className="text-muted-foreground">Service:</span>
+                  <span className="font-mono">{user.serviceNumber}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-muted-foreground">Unit:</span>
+                  <span>{user.unit}</span>
+                </div>
+                <div className="flex items-center gap-2 mt-2">
+                  {user.isActive ? (
+                    <Badge variant="default" className="text-xs">
+                      <UserCheck className="h-3 w-3 mr-1" /> Active
+                    </Badge>
+                  ) : (
+                    <Badge variant="destructive" className="text-xs">
+                      <UserX className="h-3 w-3 mr-1" /> Inactive
+                    </Badge>
+                  )}
                 </div>
               </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
 
-              <DialogFooter>
-                <Button
-                  variant="outline"
-                  onClick={() => setViewDialogOpen(false)}
-                >
-                  Close
-                </Button>
-                {selectedUser.id !== currentUser?.id && (
-                  <Button onClick={() => handleEdit(selectedUser)}>
-                    <Edit className="h-4 w-4 mr-2" />
-                    Edit User
-                  </Button>
-                )}
-              </DialogFooter>
-            </>
-          )}
-        </DialogContent>
-      </Dialog>
+      {filteredUsers.length === 0 && (
+        <Card className="p-12 text-center">
+          <p className="text-muted-foreground">No users found</p>
+        </Card>
+      )}
 
-      {/* Create/Edit Dialog */}
-      <Dialog
-        open={createDialogOpen || editDialogOpen}
-        onOpenChange={(open) => {
-          if (!open) {
-            setCreateDialogOpen(false);
-            setEditDialogOpen(false);
-            resetForm();
-          }
-        }}
-      >
-        <DialogContent className="sm:max-w-2xl">
+      {/* Create Dialog */}
+      <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>
-              {editDialogOpen ? "Edit User" : "Add New User"}
-            </DialogTitle>
-            <DialogDescription>
-              {editDialogOpen
-                ? "Update user account details"
-                : "Create a new user account for unit personnel"}
-            </DialogDescription>
+            <DialogTitle>Create New User</DialogTitle>
           </DialogHeader>
+          <div className="space-y-6">
+            {/* Avatar Upload */}
+            <div className="flex flex-col items-center space-y-3">
+              <Label>Profile Picture (Optional)</Label>
+              {avatarPreview ? (
+                <div className="relative">
+                  <img src={avatarPreview} alt="Avatar" className="w-24 h-24 rounded-full object-cover border-2" />
+                  <button
+                    type="button"
+                    onClick={removeAvatar}
+                    className="absolute -top-2 -right-2 bg-destructive text-destructive-foreground rounded-full p-1"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                </div>
+              ) : (
+                <label className="w-24 h-24 rounded-full border-2 border-dashed flex items-center justify-center cursor-pointer hover:border-primary">
+                  <Upload className="h-6 w-6 text-muted-foreground" />
+                  <input type="file" accept="image/*" onChange={handleAvatarChange} className="hidden" />
+                </label>
+              )}
+            </div>
 
-          <div className="space-y-4 max-h-[60vh] overflow-y-auto pr-2">
-            <div className="space-y-2">
-              <Label>Full Name *</Label>
-              <Input
-                placeholder="Enter full name"
-                value={formName}
-                onChange={(e) => setFormName(e.target.value)}
-              />
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="name">Full Name *</Label>
+                <Input
+                  id="name"
+                  value={formData.name}
+                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  placeholder="Enter full name"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="email">Email *</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  value={formData.email}
+                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                  placeholder="user@unit.mil"
+                />
+              </div>
             </div>
 
             <div className="space-y-2">
-              <Label>Email *</Label>
+              <Label htmlFor="password">Password *</Label>
               <Input
-                type="email"
-                placeholder="email@unit.army"
-                value={formEmail}
-                onChange={(e) => setFormEmail(e.target.value)}
+                id="password"
+                type="password"
+                value={formData.password}
+                onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                placeholder="Minimum 6 characters"
               />
             </div>
 
@@ -654,98 +516,218 @@ export default function UserManagement() {
               <div className="space-y-2">
                 <Label>Rank *</Label>
                 <SelectDropdown
-                  placeholder="Select rank"
+                  defaultValue={formData.rank}
+                  onValueChange={(val) => setFormData({ ...formData, rank: val })}
                   items={ranks}
-                  defaultValue={formRank}
-                  onValueChange={setFormRank}
+                  placeholder="Select rank"
                 />
               </div>
-
               <div className="space-y-2">
-                <Label>Service Number *</Label>
-                <Input
-                  placeholder="e.g. IC-45678"
-                  className="font-mono"
-                  value={formServiceNumber}
-                  onChange={(e) => setFormServiceNumber(e.target.value)}
+                <Label>Role *</Label>
+                <SelectDropdown
+                  defaultValue={formData.role}
+                  onValueChange={(val) => setFormData({ ...formData, role: val })}
+                  items={roles}
                 />
               </div>
             </div>
 
-            <div className="space-y-2">
-              <Label>Unit *</Label>
-              <Input
-                placeholder="e.g. 2nd Battalion"
-                value={formUnit}
-                onChange={(e) => setFormUnit(e.target.value)}
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label>Role</Label>
-              <SelectDropdown
-                placeholder="Select role"
-                items={roles}
-                defaultValue={formRole}
-                onValueChange={setFormRole}
-              />
-              <p className="text-xs text-muted-foreground">
-                Determines user permissions and access level
-              </p>
-            </div>
-
-            <div className="flex items-center justify-between rounded-lg border p-3">
-              <div className="space-y-0.5">
-                <Label>Active Status</Label>
-                <p className="text-xs text-muted-foreground">
-                  User can access the portal
-                </p>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="serviceNumber">Service Number *</Label>
+                <Input
+                  id="serviceNumber"
+                  value={formData.serviceNumber}
+                  onChange={(e) => setFormData({ ...formData, serviceNumber: e.target.value })}
+                  placeholder="IC-12345"
+                  className="font-mono"
+                />
               </div>
-              <Switch checked={formActive} onCheckedChange={setFormActive} />
+              <div className="space-y-2">
+                <Label htmlFor="unit">Unit *</Label>
+                <Input
+                  id="unit"
+                  value={formData.unit}
+                  onChange={(e) => setFormData({ ...formData, unit: e.target.value })}
+                  placeholder="1st Battalion"
+                />
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <Switch
+                id="isActive"
+                checked={formData.isActive}
+                onCheckedChange={(checked) => setFormData({ ...formData, isActive: checked })}
+              />
+              <Label htmlFor="isActive">Account Active</Label>
             </div>
           </div>
-
-          <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => {
-                setCreateDialogOpen(false);
-                setEditDialogOpen(false);
-                resetForm();
-              }}
-            >
+          <DialogFooter className="mt-6">
+            <Button variant="outline" onClick={() => setShowCreateDialog(false)} disabled={saving}>
               Cancel
             </Button>
-            <Button onClick={editDialogOpen ? handleUpdate : handleCreate}>
-              {editDialogOpen ? "Update" : "Create"} User
+            <Button onClick={handleCreateUser} disabled={saving}>
+              {saving ? "Creating..." : "Create User"}
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
-      {/* Delete Dialog */}
-      <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-        <DialogContent>
+      {/* Edit Dialog */}
+      <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-destructive">
-              <AlertCircle className="h-5 w-5" />
-              Delete User
-            </DialogTitle>
-            <DialogDescription>
-              Are you sure you want to delete user "{selectedUser?.name}"? This
-              action cannot be undone and will remove all associated data.
-            </DialogDescription>
+            <DialogTitle>Edit User</DialogTitle>
           </DialogHeader>
-          <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => setDeleteDialogOpen(false)}
-            >
+          <div className="space-y-6">
+            {/* Avatar Upload */}
+            <div className="flex flex-col items-center space-y-3">
+              <Label>Profile Picture</Label>
+              {avatarPreview ? (
+                <div className="relative">
+                  <img src={avatarPreview} alt="Avatar" className="w-24 h-24 rounded-full object-cover border-2" />
+                  <button
+                    type="button"
+                    onClick={removeAvatar}
+                    className="absolute -top-2 -right-2 bg-destructive text-destructive-foreground rounded-full p-1"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                </div>
+              ) : (
+                <label className="w-24 h-24 rounded-full border-2 border-dashed flex items-center justify-center cursor-pointer hover:border-primary">
+                  <Upload className="h-6 w-6 text-muted-foreground" />
+                  <input type="file" accept="image/*" onChange={handleAvatarChange} className="hidden" />
+                </label>
+              )}
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="edit-name">Full Name *</Label>
+              <Input
+                id="edit-name"
+                value={formData.name}
+                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="edit-email">Email *</Label>
+              <Input id="edit-email" type="email" value={formData.email} disabled className="bg-muted" />
+              <p className="text-xs text-muted-foreground">Email cannot be changed</p>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Rank *</Label>
+                <SelectDropdown
+                  defaultValue={formData.rank}
+                  onValueChange={(val) => setFormData({ ...formData, rank: val })}
+                  items={ranks}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Role *</Label>
+                <SelectDropdown
+                  defaultValue={formData.role}
+                  onValueChange={(val) => setFormData({ ...formData, role: val })}
+                  items={roles}
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="edit-serviceNumber">Service Number *</Label>
+                <Input
+                  id="edit-serviceNumber"
+                  value={formData.serviceNumber}
+                  onChange={(e) => setFormData({ ...formData, serviceNumber: e.target.value })}
+                  className="font-mono"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-unit">Unit *</Label>
+                <Input
+                  id="edit-unit"
+                  value={formData.unit}
+                  onChange={(e) => setFormData({ ...formData, unit: e.target.value })}
+                />
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <Switch
+                id="edit-isActive"
+                checked={formData.isActive}
+                onCheckedChange={(checked) => setFormData({ ...formData, isActive: checked })}
+              />
+              <Label htmlFor="edit-isActive">Account Active</Label>
+            </div>
+          </div>
+          <DialogFooter className="mt-6">
+            <Button variant="outline" onClick={() => setShowEditDialog(false)} disabled={saving}>
               Cancel
             </Button>
-            <Button variant="destructive" onClick={confirmDelete}>
-              Delete User
+            <Button onClick={handleUpdateUser} disabled={saving}>
+              {saving ? "Updating..." : "Update User"}
             </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* View Dialog */}
+      <Dialog open={showViewDialog} onOpenChange={setShowViewDialog}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>User Details</DialogTitle>
+          </DialogHeader>
+          {viewingUser && (
+            <div className="space-y-4">
+              <div className="flex flex-col items-center">
+                <Avatar className="h-24 w-24 mb-3">
+                  {viewingUser.avatar && <AvatarImage src={viewingUser.avatar} />}
+                  <AvatarFallback className="text-2xl">{viewingUser.name.slice(0, 2).toUpperCase()}</AvatarFallback>
+                </Avatar>
+                <h3 className="font-semibold text-lg">{viewingUser.name}</h3>
+                <p className="text-sm text-muted-foreground">{viewingUser.email}</p>
+              </div>
+
+              <div className="space-y-3 border-t pt-4">
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Rank:</span>
+                  <span className="font-medium">{viewingUser.rank}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Role:</span>
+                  <Badge variant="outline">{viewingUser.role}</Badge>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Service Number:</span>
+                  <span className="font-mono">{viewingUser.serviceNumber}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Unit:</span>
+                  <span>{viewingUser.unit}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Status:</span>
+                  {viewingUser.isActive ? (
+                    <Badge variant="default">Active</Badge>
+                  ) : (
+                    <Badge variant="destructive">Inactive</Badge>
+                  )}
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Created:</span>
+                  <span className="text-sm">{viewingUser.createdAt?.toLocaleDateString()}</span>
+                </div>
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button onClick={() => setShowViewDialog(false)}>Close</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
