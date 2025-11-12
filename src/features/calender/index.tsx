@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { ChevronLeft, ChevronRight, Edit, Trash2, Plus } from "lucide-react";
+import { ChevronLeft, ChevronRight, Edit, Trash2, Plus, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -38,6 +38,9 @@ export default function Calendar() {
   const [showEventDialog, setShowEventDialog] = useState(false);
   const [showFormDialog, setShowFormDialog] = useState(false);
   const [editingEvent, setEditingEvent] = useState<CalendarEvent | null>(null);
+  const [showDayEventsDialog, setShowDayEventsDialog] = useState(false);
+  const [selectedDayEvents, setSelectedDayEvents] = useState<CalendarEvent[]>([]);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Form state
   const [formData, setFormData] = useState({
@@ -77,12 +80,32 @@ export default function Calendar() {
     return new Date(date.getFullYear(), date.getMonth(), 1).getDay();
   };
 
-  const goToPreviousMonth = () => {
-    setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1));
+  const goToPrevious = () => {
+    if (view === "day") {
+      const newDate = new Date(currentDate);
+      newDate.setDate(newDate.getDate() - 1);
+      setCurrentDate(newDate);
+    } else if (view === "week") {
+      const newDate = new Date(currentDate);
+      newDate.setDate(newDate.getDate() - 7);
+      setCurrentDate(newDate);
+    } else {
+      setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1));
+    }
   };
 
-  const goToNextMonth = () => {
-    setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1));
+  const goToNext = () => {
+    if (view === "day") {
+      const newDate = new Date(currentDate);
+      newDate.setDate(newDate.getDate() + 1);
+      setCurrentDate(newDate);
+    } else if (view === "week") {
+      const newDate = new Date(currentDate);
+      newDate.setDate(newDate.getDate() + 7);
+      setCurrentDate(newDate);
+    } else {
+      setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1));
+    }
   };
 
   const isToday = (day: number) => {
@@ -103,6 +126,31 @@ export default function Calendar() {
         eventDate.getFullYear() === currentDate.getFullYear()
       );
     });
+  };
+
+  const getEventsForDate = (date: Date) => {
+    return events.filter((event) => {
+      const eventDate = new Date(event.startTime);
+      return (
+        eventDate.getDate() === date.getDate() &&
+        eventDate.getMonth() === date.getMonth() &&
+        eventDate.getFullYear() === date.getFullYear()
+      );
+    });
+  };
+
+  const getWeekDays = (date: Date) => {
+    const day = date.getDay();
+    const diff = date.getDate() - day;
+    const sunday = new Date(date);
+    sunday.setDate(diff);
+    const week = [];
+    for (let i = 0; i < 7; i++) {
+      const d = new Date(sunday);
+      d.setDate(sunday.getDate() + i);
+      week.push(d);
+    }
+    return week;
   };
 
   const getPreviousMonthDays = () => {
@@ -168,8 +216,20 @@ export default function Calendar() {
     setEditingEvent(null);
   };
 
-  const openCreateDialog = () => {
+  const openCreateDialog = (selectedDate?: Date) => {
     resetForm();
+    if (selectedDate) {
+      const dateStr = selectedDate.toISOString().split("T")[0];
+      const now = new Date();
+      const timeStr = now.toTimeString().slice(0, 5);
+      setFormData({
+        ...formData,
+        startDate: dateStr,
+        startTime: timeStr,
+        endDate: dateStr,
+        endTime: timeStr,
+      });
+    }
     setShowFormDialog(true);
   };
 
@@ -198,6 +258,7 @@ export default function Calendar() {
       return;
     }
 
+    setIsSubmitting(true);
     try {
       const startDateTime = formData.isAllDay
         ? new Date(formData.startDate + "T00:00:00")
@@ -241,6 +302,8 @@ export default function Calendar() {
     } catch (error: any) {
       console.error("Save error:", error);
       toast.error(error.message || "Failed to save event");
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -260,6 +323,18 @@ export default function Calendar() {
   const openEventDialog = (event: CalendarEvent) => {
     setSelectedEvent(event);
     setShowEventDialog(true);
+  };
+
+  const handleDayClick = (day: number) => {
+    const dayEvents = getEventsForDay(day);
+    const clickedDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), day);
+
+    if (dayEvents.length > 0) {
+      setSelectedDayEvents(dayEvents);
+      setShowDayEventsDialog(true);
+    } else {
+      openCreateDialog(clickedDate);
+    }
   };
 
   if (loading) {
@@ -292,7 +367,7 @@ export default function Calendar() {
                   <p className="text-lg font-normal text-gray-600">Don't miss schedule</p>
                 </div>
                 {canManage && (
-                  <Button onClick={openCreateDialog} size="sm">
+                  <Button onClick={() => openCreateDialog()} size="sm">
                     <Plus className="h-4 w-4" />
                   </Button>
                 )}
@@ -347,17 +422,21 @@ export default function Calendar() {
               <div className="flex flex-col md:flex-row gap-4 items-center justify-between mb-5">
                 <div className="flex items-center gap-4">
                   <h5 className="text-xl leading-8 font-semibold text-gray-900">
-                    {currentDate.toLocaleDateString("en-US", { month: "long", year: "numeric" })}
+                    {view === "day"
+                      ? currentDate.toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })
+                      : view === "week"
+                      ? `Week of ${getWeekDays(currentDate)[0].toLocaleDateString("en-US", { month: "short", day: "numeric" })}`
+                      : currentDate.toLocaleDateString("en-US", { month: "long", year: "numeric" })}
                   </h5>
                   <div className="flex items-center">
                     <button
-                      onClick={goToPreviousMonth}
+                      onClick={goToPrevious}
                       className="text-indigo-600 p-1 rounded transition-all duration-300 hover:text-white hover:bg-indigo-600"
                     >
                       <ChevronLeft className="h-4 w-4" />
                     </button>
                     <button
-                      onClick={goToNextMonth}
+                      onClick={goToNext}
                       className="text-indigo-600 p-1 rounded transition-all duration-300 hover:text-white hover:bg-indigo-600"
                     >
                       <ChevronRight className="h-4 w-4" />
@@ -392,95 +471,221 @@ export default function Calendar() {
                 </div>
               </div>
 
-              <div className="border border-indigo-200 rounded-xl overflow-hidden">
-                {/* Day Headers */}
-                <div className="grid grid-cols-7 rounded-t-3xl border-b border-indigo-200">
-                  {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((day, i) => (
-                    <div
-                      key={day}
-                      className={`py-3.5 bg-indigo-50 flex items-center justify-center text-sm font-medium text-indigo-600 ${
-                        i === 0 ? "rounded-tl-xl border-r" : i === 6 ? "rounded-tr-xl" : "border-r"
-                      } border-indigo-200`}
-                    >
-                      {day}
-                    </div>
-                  ))}
-                </div>
-
-                {/* Calendar Grid */}
-                <div className="grid grid-cols-7">
-                  {/* Previous month days */}
-                  {prevMonthDays.map((day, i) => (
-                    <div
-                      key={`prev-${i}`}
-                      className={`flex xl:aspect-square max-xl:min-h-[60px] p-3.5 bg-gray-50 border-indigo-200 transition-all duration-300 hover:bg-indigo-50 ${
-                        i < 6 ? "border-r" : ""
-                      } border-b`}
-                    >
-                      <span className="text-xs font-semibold text-gray-400">{day}</span>
-                    </div>
-                  ))}
-
-                  {/* Current month days */}
-                  {Array.from({ length: daysInMonth }, (_, i) => i + 1).map((day) => {
-                    const dayEvents = getEventsForDay(day);
-                    const isTodayDate = isToday(day);
-                    const dayOfWeek = new Date(currentDate.getFullYear(), currentDate.getMonth(), day).getDay();
-
-                    return (
+              {/* Conditional View Rendering */}
+              {view === "month" && (
+                <div className="border border-indigo-200 rounded-xl overflow-hidden">
+                  {/* Day Headers */}
+                  <div className="grid grid-cols-7 rounded-t-3xl border-b border-indigo-200">
+                    {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((day, i) => (
                       <div
                         key={day}
-                        className={`flex xl:aspect-square max-xl:min-h-[60px] p-3.5 relative bg-white border-indigo-200 transition-all duration-300 hover:bg-indigo-50 cursor-pointer ${
-                          dayOfWeek !== 6 ? "border-r" : ""
+                        className={`py-3.5 bg-indigo-50 flex items-center justify-center text-sm font-medium text-indigo-600 ${
+                          i === 0 ? "rounded-tl-xl border-r" : i === 6 ? "rounded-tr-xl" : "border-r"
+                        } border-indigo-200`}
+                      >
+                        {day}
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Calendar Grid */}
+                  <div className="grid grid-cols-7">
+                    {/* Previous month days */}
+                    {prevMonthDays.map((day, i) => (
+                      <div
+                        key={`prev-${i}`}
+                        className={`flex xl:aspect-square max-xl:min-h-[60px] p-3.5 bg-gray-50 border-indigo-200 transition-all duration-300 hover:bg-indigo-50 ${
+                          i < 6 ? "border-r" : ""
                         } border-b`}
                       >
-                        <span
-                          className={`text-xs font-semibold ${
-                            isTodayDate
-                              ? "text-white w-6 h-6 rounded-full flex items-center justify-center bg-indigo-600"
-                              : "text-gray-900"
-                          }`}
-                        >
-                          {day}
-                        </span>
-                        {dayEvents.length > 0 && (
-                          <div
-                            className="absolute top-9 bottom-1 left-3.5 p-1.5 xl:px-2.5 h-max rounded"
-                            style={{ backgroundColor: getCategoryColor(dayEvents[0].category) + "20" }}
-                            onClick={() => openEventDialog(dayEvents[0])}
-                          >
-                            <p
-                              className="hidden xl:block text-xs font-medium mb-px whitespace-nowrap overflow-hidden text-ellipsis"
-                              style={{ color: getCategoryColor(dayEvents[0].category).replace("bg-", "#") }}
-                            >
-                              {dayEvents[0].title}
-                            </p>
-                            <span
-                              className="hidden xl:block text-xs font-normal whitespace-nowrap"
-                              style={{ color: getCategoryColor(dayEvents[0].category).replace("bg-", "#") }}
-                            >
-                              {formatTime(dayEvents[0].startTime)} - {formatTime(dayEvents[0].endTime)}
-                            </span>
-                            <p className={`xl:hidden w-2 h-2 rounded-full ${getCategoryColor(dayEvents[0].category)}`} />
-                          </div>
-                        )}
+                        <span className="text-xs font-semibold text-gray-400">{day}</span>
                       </div>
-                    );
-                  })}
+                    ))}
 
-                  {/* Next month days */}
-                  {nextMonthDays.map((day, i) => (
-                    <div
-                      key={`next-${i}`}
-                      className={`flex xl:aspect-square max-xl:min-h-[60px] p-3.5 bg-gray-50 border-indigo-200 transition-all duration-300 hover:bg-indigo-50 ${
-                        i === 0 ? "rounded-bl-xl" : ""
-                      } ${i === nextMonthDays.length - 1 ? "rounded-br-xl" : ""} ${i < nextMonthDays.length - 1 ? "border-r" : ""}`}
-                    >
-                      <span className="text-xs font-semibold text-gray-400">{day}</span>
-                    </div>
-                  ))}
+                    {/* Current month days */}
+                    {Array.from({ length: daysInMonth }, (_, i) => i + 1).map((day) => {
+                      const dayEvents = getEventsForDay(day);
+                      const isTodayDate = isToday(day);
+                      const dayOfWeek = new Date(currentDate.getFullYear(), currentDate.getMonth(), day).getDay();
+
+                      return (
+                        <div
+                          key={day}
+                          onClick={() => handleDayClick(day)}
+                          className={`flex xl:aspect-square max-xl:min-h-[60px] p-3.5 relative bg-white border-indigo-200 transition-all duration-300 hover:bg-indigo-50 cursor-pointer ${
+                            dayOfWeek !== 6 ? "border-r" : ""
+                          } border-b`}
+                        >
+                          <span
+                            className={`text-xs font-semibold ${
+                              isTodayDate
+                                ? "text-white w-6 h-6 rounded-full flex items-center justify-center bg-indigo-600"
+                                : "text-gray-900"
+                            }`}
+                          >
+                            {day}
+                          </span>
+                          {dayEvents.length > 0 && (
+                            <Badge
+                              className={`absolute top-2 right-2 h-6 w-6 flex items-center justify-center p-0 rounded-full text-xs font-semibold ${getCategoryColor(
+                                dayEvents[0].category
+                              )} text-white`}
+                            >
+                              {dayEvents.length}
+                            </Badge>
+                          )}
+                        </div>
+                      );
+                    })}
+
+                    {/* Next month days */}
+                    {nextMonthDays.map((day, i) => (
+                      <div
+                        key={`next-${i}`}
+                        className={`flex xl:aspect-square max-xl:min-h-[60px] p-3.5 bg-gray-50 border-indigo-200 transition-all duration-300 hover:bg-indigo-50 ${
+                          i === 0 ? "rounded-bl-xl" : ""
+                        } ${i === nextMonthDays.length - 1 ? "rounded-br-xl" : ""} ${i < nextMonthDays.length - 1 ? "border-r" : ""}`}
+                      >
+                        <span className="text-xs font-semibold text-gray-400">{day}</span>
+                      </div>
+                    ))}
+                  </div>
                 </div>
-              </div>
+              )}
+
+              {/* Day View */}
+              {view === "day" && (
+                <div className="border border-indigo-200 rounded-xl overflow-hidden bg-white">
+                  <div className="max-h-[600px] overflow-y-auto">
+                    {Array.from({ length: 24 }, (_, hour) => {
+                      const dayEvents = getEventsForDate(currentDate).filter((event) => {
+                        const eventHour = new Date(event.startTime).getHours();
+                        return eventHour === hour;
+                      });
+
+                      return (
+                        <div key={hour} className="flex border-b border-indigo-100 min-h-[60px]">
+                          <div className="w-20 flex-shrink-0 bg-indigo-50 p-3 border-r border-indigo-200">
+                            <span className="text-sm font-medium text-indigo-600">
+                              {hour.toString().padStart(2, "0")}:00
+                            </span>
+                          </div>
+                          <div className="flex-1 p-2 relative">
+                            {dayEvents.length > 0 ? (
+                              <div className="space-y-1">
+                                {dayEvents.map((event) => (
+                                  <div
+                                    key={event.id}
+                                    className={`p-2 rounded cursor-pointer hover:opacity-80 transition-opacity ${getCategoryColor(
+                                      event.category
+                                    )}`}
+                                    onClick={() => openEventDialog(event)}
+                                  >
+                                    <p className="text-sm font-semibold text-white">{event.title}</p>
+                                    <p className="text-xs text-white opacity-90">
+                                      {formatTime(event.startTime)} - {formatTime(event.endTime)}
+                                    </p>
+                                  </div>
+                                ))}
+                              </div>
+                            ) : null}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {/* Week View */}
+              {view === "week" && (
+                <div className="border border-indigo-200 rounded-xl overflow-hidden bg-white">
+                  <div className="overflow-x-auto">
+                    <div className="min-w-[800px]">
+                      {/* Week day headers */}
+                      <div className="grid grid-cols-8 border-b border-indigo-200">
+                        <div className="bg-indigo-50 p-3 border-r border-indigo-200"></div>
+                        {getWeekDays(currentDate).map((date, i) => {
+                          const isCurrentDay =
+                            date.toDateString() === new Date().toDateString();
+                          return (
+                            <div
+                              key={i}
+                              className={`bg-indigo-50 p-3 text-center ${
+                                i < 6 ? "border-r border-indigo-200" : ""
+                              }`}
+                            >
+                              <div
+                                className={`text-sm font-medium ${
+                                  isCurrentDay ? "text-indigo-600" : "text-gray-700"
+                                }`}
+                              >
+                                {date.toLocaleDateString("en-US", { weekday: "short" })}
+                              </div>
+                              <div
+                                className={`text-xs mt-1 ${
+                                  isCurrentDay
+                                    ? "w-6 h-6 rounded-full bg-indigo-600 text-white flex items-center justify-center mx-auto"
+                                    : "text-gray-500"
+                                }`}
+                              >
+                                {date.getDate()}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+
+                      {/* Time grid */}
+                      <div className="max-h-[500px] overflow-y-auto">
+                        {Array.from({ length: 24 }, (_, hour) => (
+                          <div key={hour} className="grid grid-cols-8 border-b border-indigo-100 min-h-[50px]">
+                            <div className="bg-indigo-50 p-2 border-r border-indigo-200">
+                              <span className="text-xs font-medium text-indigo-600">
+                                {hour.toString().padStart(2, "0")}:00
+                              </span>
+                            </div>
+                            {getWeekDays(currentDate).map((date, dayIndex) => {
+                              const dayEvents = getEventsForDate(date).filter((event) => {
+                                const eventHour = new Date(event.startTime).getHours();
+                                return eventHour === hour;
+                              });
+
+                              return (
+                                <div
+                                  key={dayIndex}
+                                  className={`p-1 relative ${
+                                    dayIndex < 6 ? "border-r border-indigo-100" : ""
+                                  }`}
+                                >
+                                  {dayEvents.length > 0 ? (
+                                    <div className="space-y-1">
+                                      {dayEvents.map((event) => (
+                                        <div
+                                          key={event.id}
+                                          className={`px-1.5 py-1 rounded text-xs cursor-pointer hover:opacity-80 transition-opacity ${getCategoryColor(
+                                            event.category
+                                          )}`}
+                                          onClick={() => openEventDialog(event)}
+                                          title={event.title}
+                                        >
+                                          <p className="text-white font-medium truncate text-[10px]">
+                                            {event.title}
+                                          </p>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  ) : null}
+                                </div>
+                              );
+                            })}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -630,10 +835,67 @@ export default function Calendar() {
                 setShowFormDialog(false);
                 resetForm();
               }}
+              disabled={isSubmitting}
             >
               Cancel
             </Button>
-            <Button onClick={handleCreateOrUpdate}>{editingEvent ? "Update" : "Create"} Event</Button>
+            <Button onClick={handleCreateOrUpdate} disabled={isSubmitting}>
+              {isSubmitting ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  {editingEvent ? "Updating..." : "Creating..."}
+                </>
+              ) : (
+                <>{editingEvent ? "Update" : "Create"} Event</>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Day Events List Dialog */}
+      <Dialog open={showDayEventsDialog} onOpenChange={setShowDayEventsDialog}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Events on {selectedDayEvents[0] && formatDate(selectedDayEvents[0].startTime)}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            {selectedDayEvents.map((event) => (
+              <div
+                key={event.id}
+                className="p-4 rounded-lg border border-gray-200 hover:bg-gray-50 cursor-pointer transition-colors"
+                onClick={() => {
+                  setShowDayEventsDialog(false);
+                  openEventDialog(event);
+                }}
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 mb-2">
+                      <span className={`w-2.5 h-2.5 rounded-full ${getCategoryColor(event.category)}`} />
+                      <h3 className="font-semibold text-base">{event.title}</h3>
+                    </div>
+                    <p className="text-sm text-gray-600 mb-2 line-clamp-2">{event.description}</p>
+                    <div className="flex flex-wrap items-center gap-2 text-sm text-gray-500">
+                      <span>
+                        {event.isAllDay ? "All Day" : `${formatTime(event.startTime)} - ${formatTime(event.endTime)}`}
+                      </span>
+                      <span>•</span>
+                      <span>{event.location}</span>
+                    </div>
+                  </div>
+                  <div className="flex flex-col gap-1">
+                    <Badge className={getCategoryColor(event.category)}>{event.category}</Badge>
+                    {event.isMandatory && <Badge variant="destructive" className="text-xs">Mandatory</Badge>}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowDayEventsDialog(false)}>
+              Close
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
