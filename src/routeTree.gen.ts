@@ -27,17 +27,16 @@ import { Route as authOtpRouteImport } from './routes/(auth)/otp'
 import { Route as authForgotPasswordRouteImport } from './routes/(auth)/forgot-password'
 import { Route as DashboardSettingsRouteRouteImport } from './routes/dashboard/settings/route'
 import { Route as DashboardInstitutionsRouteRouteImport } from './routes/dashboard/institutions/route'
+import { Route as DashboardUserManagementIndexRouteImport } from './routes/dashboard/user-management/index'
 import { Route as DashboardSettingsIndexRouteImport } from './routes/dashboard/settings/index'
 import { Route as DashboardMessagesIndexRouteImport } from './routes/dashboard/messages/index'
+import { Route as DashboardAnalyticsIndexRouteImport } from './routes/dashboard/analytics/index'
 
 const InstitutionsSubmissionsIndexLazyRouteImport = createFileRoute(
   '/institutions/submissions/',
 )()
 const InstitutionsDashboardIndexLazyRouteImport = createFileRoute(
   '/institutions/dashboard/',
-)()
-const DashboardUserManagementIndexLazyRouteImport = createFileRoute(
-  '/dashboard/user-management/',
 )()
 const DashboardResourcesIndexLazyRouteImport = createFileRoute(
   '/dashboard/resources/',
@@ -50,9 +49,6 @@ const DashboardCalendarIndexLazyRouteImport = createFileRoute(
 )()
 const DashboardAnnouncementsIndexLazyRouteImport = createFileRoute(
   '/dashboard/announcements/',
-)()
-const DashboardAnalyticsIndexLazyRouteImport = createFileRoute(
-  '/dashboard/analytics/',
 )()
 const DashboardSettingsNotificationsLazyRouteImport = createFileRoute(
   '/dashboard/settings/notifications',
@@ -164,16 +160,6 @@ const InstitutionsDashboardIndexLazyRoute =
   } as any).lazy(() =>
     import('./routes/institutions/dashboard/index.lazy').then((d) => d.Route),
   )
-const DashboardUserManagementIndexLazyRoute =
-  DashboardUserManagementIndexLazyRouteImport.update({
-    id: '/user-management/',
-    path: '/user-management/',
-    getParentRoute: () => DashboardRoute,
-  } as any).lazy(() =>
-    import('./routes/dashboard/user-management/index.lazy').then(
-      (d) => d.Route,
-    ),
-  )
 const DashboardResourcesIndexLazyRoute =
   DashboardResourcesIndexLazyRouteImport.update({
     id: '/resources/',
@@ -206,13 +192,15 @@ const DashboardAnnouncementsIndexLazyRoute =
   } as any).lazy(() =>
     import('./routes/dashboard/announcements/index.lazy').then((d) => d.Route),
   )
-const DashboardAnalyticsIndexLazyRoute =
-  DashboardAnalyticsIndexLazyRouteImport.update({
-    id: '/analytics/',
-    path: '/analytics/',
+const DashboardUserManagementIndexRoute =
+  DashboardUserManagementIndexRouteImport.update({
+    id: '/user-management/',
+    path: '/user-management/',
     getParentRoute: () => DashboardRoute,
   } as any).lazy(() =>
-    import('./routes/dashboard/analytics/index.lazy').then((d) => d.Route),
+    import('./routes/dashboard/user-management/index.lazy').then(
+      (d) => d.Route,
+    ),
   )
 const DashboardSettingsIndexRoute = DashboardSettingsIndexRouteImport.update({
   id: '/',
@@ -224,6 +212,13 @@ const DashboardMessagesIndexRoute = DashboardMessagesIndexRouteImport.update({
   path: '/messages/',
   getParentRoute: () => DashboardRoute,
 } as any)
+const DashboardAnalyticsIndexRoute = DashboardAnalyticsIndexRouteImport.update({
+  id: '/analytics/',
+  path: '/analytics/',
+  getParentRoute: () => DashboardRoute,
+} as any).lazy(() =>
+  import('./routes/dashboard/analytics/index.lazy').then((d) => d.Route),
+)
 const DashboardSettingsNotificationsLazyRoute =
   DashboardSettingsNotificationsLazyRouteImport.update({
     id: '/notifications',
@@ -280,14 +275,14 @@ export interface FileRoutesByFullPath {
   '/dashboard/settings/appearance': typeof DashboardSettingsAppearanceLazyRoute
   '/dashboard/settings/display': typeof DashboardSettingsDisplayLazyRoute
   '/dashboard/settings/notifications': typeof DashboardSettingsNotificationsLazyRoute
+  '/dashboard/analytics': typeof DashboardAnalyticsIndexRoute
   '/dashboard/messages': typeof DashboardMessagesIndexRoute
   '/dashboard/settings/': typeof DashboardSettingsIndexRoute
-  '/dashboard/analytics': typeof DashboardAnalyticsIndexLazyRoute
+  '/dashboard/user-management': typeof DashboardUserManagementIndexRoute
   '/dashboard/announcements': typeof DashboardAnnouncementsIndexLazyRoute
   '/dashboard/calendar': typeof DashboardCalendarIndexLazyRoute
   '/dashboard/institutions/': typeof DashboardInstitutionsIndexLazyRoute
   '/dashboard/resources': typeof DashboardResourcesIndexLazyRoute
-  '/dashboard/user-management': typeof DashboardUserManagementIndexLazyRoute
   '/institutions/dashboard': typeof InstitutionsDashboardIndexLazyRoute
   '/institutions/submissions': typeof InstitutionsSubmissionsIndexLazyRoute
 }
@@ -308,14 +303,14 @@ export interface FileRoutesByTo {
   '/dashboard/settings/appearance': typeof DashboardSettingsAppearanceLazyRoute
   '/dashboard/settings/display': typeof DashboardSettingsDisplayLazyRoute
   '/dashboard/settings/notifications': typeof DashboardSettingsNotificationsLazyRoute
+  '/dashboard/analytics': typeof DashboardAnalyticsIndexRoute
   '/dashboard/messages': typeof DashboardMessagesIndexRoute
   '/dashboard/settings': typeof DashboardSettingsIndexRoute
-  '/dashboard/analytics': typeof DashboardAnalyticsIndexLazyRoute
+  '/dashboard/user-management': typeof DashboardUserManagementIndexRoute
   '/dashboard/announcements': typeof DashboardAnnouncementsIndexLazyRoute
   '/dashboard/calendar': typeof DashboardCalendarIndexLazyRoute
   '/dashboard/institutions': typeof DashboardInstitutionsIndexLazyRoute
   '/dashboard/resources': typeof DashboardResourcesIndexLazyRoute
-  '/dashboard/user-management': typeof DashboardUserManagementIndexLazyRoute
   '/institutions/dashboard': typeof InstitutionsDashboardIndexLazyRoute
   '/institutions/submissions': typeof InstitutionsSubmissionsIndexLazyRoute
 }
@@ -341,14 +336,14 @@ export interface FileRoutesById {
   '/dashboard/settings/appearance': typeof DashboardSettingsAppearanceLazyRoute
   '/dashboard/settings/display': typeof DashboardSettingsDisplayLazyRoute
   '/dashboard/settings/notifications': typeof DashboardSettingsNotificationsLazyRoute
+  '/dashboard/analytics/': typeof DashboardAnalyticsIndexRoute
   '/dashboard/messages/': typeof DashboardMessagesIndexRoute
   '/dashboard/settings/': typeof DashboardSettingsIndexRoute
-  '/dashboard/analytics/': typeof DashboardAnalyticsIndexLazyRoute
+  '/dashboard/user-management/': typeof DashboardUserManagementIndexRoute
   '/dashboard/announcements/': typeof DashboardAnnouncementsIndexLazyRoute
   '/dashboard/calendar/': typeof DashboardCalendarIndexLazyRoute
   '/dashboard/institutions/': typeof DashboardInstitutionsIndexLazyRoute
   '/dashboard/resources/': typeof DashboardResourcesIndexLazyRoute
-  '/dashboard/user-management/': typeof DashboardUserManagementIndexLazyRoute
   '/institutions/dashboard/': typeof InstitutionsDashboardIndexLazyRoute
   '/institutions/submissions/': typeof InstitutionsSubmissionsIndexLazyRoute
 }
@@ -375,14 +370,14 @@ export interface FileRouteTypes {
     | '/dashboard/settings/appearance'
     | '/dashboard/settings/display'
     | '/dashboard/settings/notifications'
+    | '/dashboard/analytics'
     | '/dashboard/messages'
     | '/dashboard/settings/'
-    | '/dashboard/analytics'
+    | '/dashboard/user-management'
     | '/dashboard/announcements'
     | '/dashboard/calendar'
     | '/dashboard/institutions/'
     | '/dashboard/resources'
-    | '/dashboard/user-management'
     | '/institutions/dashboard'
     | '/institutions/submissions'
   fileRoutesByTo: FileRoutesByTo
@@ -403,14 +398,14 @@ export interface FileRouteTypes {
     | '/dashboard/settings/appearance'
     | '/dashboard/settings/display'
     | '/dashboard/settings/notifications'
+    | '/dashboard/analytics'
     | '/dashboard/messages'
     | '/dashboard/settings'
-    | '/dashboard/analytics'
+    | '/dashboard/user-management'
     | '/dashboard/announcements'
     | '/dashboard/calendar'
     | '/dashboard/institutions'
     | '/dashboard/resources'
-    | '/dashboard/user-management'
     | '/institutions/dashboard'
     | '/institutions/submissions'
   id:
@@ -435,14 +430,14 @@ export interface FileRouteTypes {
     | '/dashboard/settings/appearance'
     | '/dashboard/settings/display'
     | '/dashboard/settings/notifications'
+    | '/dashboard/analytics/'
     | '/dashboard/messages/'
     | '/dashboard/settings/'
-    | '/dashboard/analytics/'
+    | '/dashboard/user-management/'
     | '/dashboard/announcements/'
     | '/dashboard/calendar/'
     | '/dashboard/institutions/'
     | '/dashboard/resources/'
-    | '/dashboard/user-management/'
     | '/institutions/dashboard/'
     | '/institutions/submissions/'
   fileRoutesById: FileRoutesById
@@ -590,13 +585,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof InstitutionsDashboardIndexLazyRouteImport
       parentRoute: typeof InstitutionsRoute
     }
-    '/dashboard/user-management/': {
-      id: '/dashboard/user-management/'
-      path: '/user-management'
-      fullPath: '/dashboard/user-management'
-      preLoaderRoute: typeof DashboardUserManagementIndexLazyRouteImport
-      parentRoute: typeof DashboardRoute
-    }
     '/dashboard/resources/': {
       id: '/dashboard/resources/'
       path: '/resources'
@@ -625,11 +613,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardAnnouncementsIndexLazyRouteImport
       parentRoute: typeof DashboardRoute
     }
-    '/dashboard/analytics/': {
-      id: '/dashboard/analytics/'
-      path: '/analytics'
-      fullPath: '/dashboard/analytics'
-      preLoaderRoute: typeof DashboardAnalyticsIndexLazyRouteImport
+    '/dashboard/user-management/': {
+      id: '/dashboard/user-management/'
+      path: '/user-management'
+      fullPath: '/dashboard/user-management'
+      preLoaderRoute: typeof DashboardUserManagementIndexRouteImport
       parentRoute: typeof DashboardRoute
     }
     '/dashboard/settings/': {
@@ -644,6 +632,13 @@ declare module '@tanstack/react-router' {
       path: '/messages'
       fullPath: '/dashboard/messages'
       preLoaderRoute: typeof DashboardMessagesIndexRouteImport
+      parentRoute: typeof DashboardRoute
+    }
+    '/dashboard/analytics/': {
+      id: '/dashboard/analytics/'
+      path: '/analytics'
+      fullPath: '/dashboard/analytics'
+      preLoaderRoute: typeof DashboardAnalyticsIndexRouteImport
       parentRoute: typeof DashboardRoute
     }
     '/dashboard/settings/notifications': {
@@ -718,24 +713,24 @@ interface DashboardRouteChildren {
   DashboardInstitutionsRouteRoute: typeof DashboardInstitutionsRouteRouteWithChildren
   DashboardSettingsRouteRoute: typeof DashboardSettingsRouteRouteWithChildren
   DashboardIndexRoute: typeof DashboardIndexRoute
+  DashboardAnalyticsIndexRoute: typeof DashboardAnalyticsIndexRoute
   DashboardMessagesIndexRoute: typeof DashboardMessagesIndexRoute
-  DashboardAnalyticsIndexLazyRoute: typeof DashboardAnalyticsIndexLazyRoute
+  DashboardUserManagementIndexRoute: typeof DashboardUserManagementIndexRoute
   DashboardAnnouncementsIndexLazyRoute: typeof DashboardAnnouncementsIndexLazyRoute
   DashboardCalendarIndexLazyRoute: typeof DashboardCalendarIndexLazyRoute
   DashboardResourcesIndexLazyRoute: typeof DashboardResourcesIndexLazyRoute
-  DashboardUserManagementIndexLazyRoute: typeof DashboardUserManagementIndexLazyRoute
 }
 
 const DashboardRouteChildren: DashboardRouteChildren = {
   DashboardInstitutionsRouteRoute: DashboardInstitutionsRouteRouteWithChildren,
   DashboardSettingsRouteRoute: DashboardSettingsRouteRouteWithChildren,
   DashboardIndexRoute: DashboardIndexRoute,
+  DashboardAnalyticsIndexRoute: DashboardAnalyticsIndexRoute,
   DashboardMessagesIndexRoute: DashboardMessagesIndexRoute,
-  DashboardAnalyticsIndexLazyRoute: DashboardAnalyticsIndexLazyRoute,
+  DashboardUserManagementIndexRoute: DashboardUserManagementIndexRoute,
   DashboardAnnouncementsIndexLazyRoute: DashboardAnnouncementsIndexLazyRoute,
   DashboardCalendarIndexLazyRoute: DashboardCalendarIndexLazyRoute,
   DashboardResourcesIndexLazyRoute: DashboardResourcesIndexLazyRoute,
-  DashboardUserManagementIndexLazyRoute: DashboardUserManagementIndexLazyRoute,
 }
 
 const DashboardRouteWithChildren = DashboardRoute._addFileChildren(

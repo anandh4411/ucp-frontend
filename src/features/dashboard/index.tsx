@@ -7,18 +7,20 @@ import {
   Megaphone,
   FolderOpen,
   Calendar,
-  AlertCircle,
   TrendingUp,
   Clock,
-  CheckCircle,
-  Server,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useRouter } from "@tanstack/react-router";
 import { useFirebaseStats } from "@/hooks/useFirebaseStats";
-import dashboardData from "@/data/dashboard.json";
+import {
+  useRecentActivity,
+  useRecentAnnouncements,
+  useRecentMessages,
+  useUpcomingEvents,
+} from "@/hooks/useDashboardData";
 
 // Stat Card Component
 const StatCard = ({
@@ -45,7 +47,7 @@ const StatCard = ({
         <p className="text-xs text-muted-foreground mt-1">{description}</p>
       )}
       {trend && (
-        <div className="flex items-center mt-1 text-xs text-green-600">
+        <div className="flex items-center mt-1 text-xs text-emerald-600 dark:text-emerald-400">
           <TrendingUp className="h-3 w-3 mr-1" />
           {trend}
         </div>
@@ -76,7 +78,7 @@ const ActivityItem = ({ activity }: { activity: any }) => {
       case "user":
         return Users;
       case "system":
-        return Server;
+        return Activity;
       default:
         return Activity;
     }
@@ -113,22 +115,20 @@ const ActivityItem = ({ activity }: { activity: any }) => {
 export default function Dashboard() {
   const router = useRouter();
   const [user, setUser] = useState<any>(null);
-  const [dashData, setDashData] = useState<any>(null);
   const stats = useFirebaseStats();
+
+  // Real-time data hooks
+  const { activity, loading: activityLoading } = useRecentActivity(5);
+  const { announcements, loading: announcementsLoading } = useRecentAnnouncements(5);
+  const { messages, loading: messagesLoading } = useRecentMessages(user?.uuid || "", 5);
+  const { events, loading: eventsLoading } = useUpcomingEvents(3);
 
   useEffect(() => {
     const currentUser = getCurrentUser();
     setUser(currentUser);
-
-    if (currentUser) {
-      // Get role-specific dashboard data
-      setDashData(
-        dashboardData[currentUser.role as keyof typeof dashboardData]
-      );
-    }
   }, []);
 
-  if (!user || !dashData || stats.loading) {
+  if (!user || stats.loading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
         <div className="text-center">
@@ -162,16 +162,15 @@ export default function Dashboard() {
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
           <StatCard
             title="Total Users"
-            value={dashData.stats.totalUsers}
+            value={stats.totalUsers || 0}
             icon={Users}
-            description={`${dashData.stats.activeUsers} active`}
-            trend="+12 this month"
+            description="Registered users"
           />
           <StatCard
-            title="Pending Messages"
-            value={dashData.stats.pendingMessages}
+            title="Conversations"
+            value={stats.totalConversations || 0}
             icon={MessageSquare}
-            description="Requires attention"
+            description="Total messages"
           />
           <StatCard
             title="Announcements"
@@ -198,55 +197,72 @@ export default function Dashboard() {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-2">
-              {dashData.recentActivity.map((activity: any) => (
-                <ActivityItem key={activity.id} activity={activity} />
-              ))}
-              <Button
-                variant="outline"
-                className="w-full mt-4"
-                onClick={() => router.navigate({ to: "/dashboard/messages" })}
-              >
-                View All Activity
-              </Button>
+              {activityLoading ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  Loading activity...
+                </div>
+              ) : activity.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  No recent activity
+                </div>
+              ) : (
+                <>
+                  {activity.map((item) => (
+                    <ActivityItem key={item.id} activity={item} />
+                  ))}
+                  <Button
+                    variant="outline"
+                    className="w-full mt-4"
+                    onClick={() => router.navigate({ to: "/dashboard/messages" })}
+                  >
+                    View All Activity
+                  </Button>
+                </>
+              )}
             </CardContent>
           </Card>
 
-          {/* Pending Approvals */}
+          {/* Recent Announcements */}
           <Card className="col-span-1">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <AlertCircle className="h-5 w-5" />
-                Pending Approvals
-                <Badge variant="destructive" className="ml-auto">
-                  {dashData.pendingApprovals.length}
-                </Badge>
+                <Megaphone className="h-5 w-5" />
+                Recent Announcements
               </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
-              {dashData.pendingApprovals.map((item: any) => (
-                <div
-                  key={item.id}
-                  className="flex items-start justify-between p-3 rounded-lg border"
-                >
-                  <div className="space-y-1">
-                    <p className="text-sm font-medium">{item.title}</p>
-                    <p className="text-xs text-muted-foreground">
-                      By {item.requestedBy}
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      {new Date(item.timestamp).toLocaleString()}
-                    </p>
-                  </div>
-                  <div className="flex gap-2">
-                    <Button size="sm" variant="default">
-                      <CheckCircle className="h-3 w-3" />
-                    </Button>
-                    <Button size="sm" variant="outline">
-                      View
-                    </Button>
-                  </div>
+            <CardContent className="space-y-3">
+              {announcementsLoading ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  Loading announcements...
                 </div>
-              ))}
+              ) : announcements.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  No announcements yet
+                </div>
+              ) : (
+                announcements.map((item) => (
+                  <div
+                    key={item.id}
+                    className="flex items-start justify-between p-3 rounded-lg border cursor-pointer hover:bg-accent/50 transition-colors"
+                    onClick={() => router.navigate({ to: "/dashboard/announcements" })}
+                  >
+                    <div className="flex-1 space-y-1">
+                      <div className="flex items-center gap-2">
+                        <p className="text-sm font-medium">{item.title}</p>
+                        <Badge
+                          variant={item.priority === "high" ? "destructive" : item.priority === "medium" ? "default" : "secondary"}
+                          className="text-xs"
+                        >
+                          {item.priority}
+                        </Badge>
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        {new Date(item.createdAt).toLocaleDateString()} {new Date(item.createdAt).toLocaleTimeString()}
+                      </p>
+                    </div>
+                  </div>
+                ))
+              )}
             </CardContent>
           </Card>
         </div>
@@ -322,62 +338,32 @@ export default function Dashboard() {
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
           <StatCard
             title="Total Users"
-            value={dashData.stats.totalUsers}
+            value={stats.totalUsers || 0}
             icon={Users}
-            description={`${dashData.stats.activeUsers} active`}
+            description="Registered users"
           />
           <StatCard
-            title="System Health"
-            value={dashData.stats.systemHealth.toUpperCase()}
-            icon={Server}
-            description="All systems operational"
+            title="Announcements"
+            value={stats.totalAnnouncements || 0}
+            icon={Megaphone}
+            description="Total announcements"
           />
           <StatCard
-            title="Storage Used"
-            value={dashData.systemStatus.storage}
+            title="Resources"
+            value={stats.totalResources || 0}
             icon={FolderOpen}
-            description="Database storage"
+            description="Shared resources"
           />
           <StatCard
-            title="Pending Tasks"
-            value={dashData.stats.pendingMessages}
+            title="Events"
+            value={stats.totalEvents || 0}
             icon={Clock}
-            description="Requires attention"
+            description="Calendar events"
           />
         </div>
 
         {/* Content Grid */}
         <div className="grid gap-6 md:grid-cols-2">
-          {/* System Status */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Server className="h-5 w-5" />
-                System Status
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {Object.entries(dashData.systemStatus).map(([key, value]) => (
-                <div key={key} className="flex items-center justify-between">
-                  <span className="text-sm font-medium capitalize">
-                    {key.replace(/([A-Z])/g, " $1")}
-                  </span>
-                  <Badge
-                    variant={
-                      value === "operational" || key === "storage"
-                        ? "default"
-                        : "secondary"
-                    }
-                  >
-                    {key === "lastBackup"
-                      ? new Date(value as string).toLocaleString()
-                      : (value as string)}
-                  </Badge>
-                </div>
-              ))}
-            </CardContent>
-          </Card>
-
           {/* Recent Activity */}
           <Card>
             <CardHeader>
@@ -387,9 +373,65 @@ export default function Dashboard() {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-2">
-              {dashData.recentActivity.map((activity: any) => (
-                <ActivityItem key={activity.id} activity={activity} />
-              ))}
+              {activityLoading ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  Loading activity...
+                </div>
+              ) : activity.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  No recent activity
+                </div>
+              ) : (
+                <>
+                  {activity.map((item) => (
+                    <ActivityItem key={item.id} activity={item} />
+                  ))}
+                </>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Recent Announcements */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Megaphone className="h-5 w-5" />
+                Recent Announcements
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {announcementsLoading ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  Loading announcements...
+                </div>
+              ) : announcements.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  No announcements yet
+                </div>
+              ) : (
+                announcements.map((item) => (
+                  <div
+                    key={item.id}
+                    className="flex items-start justify-between p-3 rounded-lg border cursor-pointer hover:bg-accent/50 transition-colors"
+                    onClick={() => router.navigate({ to: "/dashboard/announcements" })}
+                  >
+                    <div className="flex-1 space-y-1">
+                      <div className="flex items-center gap-2">
+                        <p className="text-sm font-medium">{item.title}</p>
+                        <Badge
+                          variant={item.priority === "high" ? "destructive" : item.priority === "medium" ? "default" : "secondary"}
+                          className="text-xs"
+                        >
+                          {item.priority}
+                        </Badge>
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        {new Date(item.createdAt).toLocaleDateString()} {new Date(item.createdAt).toLocaleTimeString()}
+                      </p>
+                    </div>
+                  </div>
+                ))
+              )}
             </CardContent>
           </Card>
         </div>
@@ -461,28 +503,28 @@ export default function Dashboard() {
       {/* Stats Grid */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <StatCard
-          title="Unread Messages"
-          value={dashData.stats.unreadMessages}
+          title="My Conversations"
+          value={messages.length}
           icon={MessageSquare}
-          description="New messages"
+          description="Total conversations"
         />
         <StatCard
           title="Announcements"
-          value={dashData.stats.unreadAnnouncements}
+          value={stats.totalAnnouncements || 0}
           icon={Megaphone}
-          description="Unread announcements"
+          description="Total announcements"
         />
         <StatCard
-          title="Shared Resources"
-          value={dashData.stats.sharedResources}
+          title="Resources"
+          value={stats.totalResources || 0}
           icon={FolderOpen}
-          description="Available to you"
+          description="Shared resources"
         />
         <StatCard
           title="Upcoming Events"
-          value={dashData.stats.upcomingEvents}
+          value={events.length}
           icon={Calendar}
-          description="Next 7 days"
+          description="Your events"
         />
       </div>
 
@@ -497,35 +539,42 @@ export default function Dashboard() {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
-            {dashData.recentMessages.map((msg: any) => (
-              <div
-                key={msg.id}
-                className="flex items-start space-x-3 p-3 rounded-lg border hover:bg-muted/50 transition-colors cursor-pointer"
-              >
-                <div className="flex-1 space-y-1">
-                  <div className="flex items-center gap-2">
-                    <p className="text-sm font-medium">{msg.from}</p>
-                    {!msg.isRead && (
-                      <Badge variant="default" className="text-xs">
-                        New
-                      </Badge>
-                    )}
-                  </div>
-                  <p className="text-sm font-medium">{msg.subject}</p>
-                  <p className="text-xs text-muted-foreground">{msg.preview}</p>
-                  <p className="text-xs text-muted-foreground">
-                    {new Date(msg.timestamp).toLocaleString()}
-                  </p>
-                </div>
+            {messagesLoading ? (
+              <div className="text-center py-8 text-muted-foreground">
+                Loading messages...
               </div>
-            ))}
-            <Button
-              variant="outline"
-              className="w-full"
-              onClick={() => router.navigate({ to: "/dashboard/messages" })}
-            >
-              View All Messages
-            </Button>
+            ) : messages.length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground">
+                No recent messages
+              </div>
+            ) : (
+              <>
+                {messages.map((msg) => (
+                  <div
+                    key={msg.id}
+                    className="flex items-start space-x-3 p-3 rounded-lg border hover:bg-muted/50 transition-colors cursor-pointer"
+                    onClick={() => router.navigate({ to: `/dashboard/messages/${msg.id}` })}
+                  >
+                    <div className="flex-1 space-y-1">
+                      <p className="text-sm font-medium">{msg.subject}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {msg.participants.length} participants
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        {new Date(msg.updatedAt || msg.createdAt).toLocaleString()}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+                <Button
+                  variant="outline"
+                  className="w-full"
+                  onClick={() => router.navigate({ to: "/dashboard/messages" })}
+                >
+                  View All Messages
+                </Button>
+              </>
+            )}
           </CardContent>
         </Card>
 
@@ -538,32 +587,44 @@ export default function Dashboard() {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
-            {dashData.upcomingEvents.map((event: any) => (
-              <div
-                key={event.id}
-                className="flex items-start space-x-3 p-3 rounded-lg border"
-              >
-                <div className="bg-primary/10 p-2 rounded-full">
-                  <Calendar className="h-4 w-4 text-primary" />
-                </div>
-                <div className="flex-1 space-y-1">
-                  <p className="text-sm font-medium">{event.title}</p>
-                  <p className="text-xs text-muted-foreground">
-                    {new Date(event.date).toLocaleString()}
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    📍 {event.location}
-                  </p>
-                </div>
+            {eventsLoading ? (
+              <div className="text-center py-8 text-muted-foreground">
+                Loading events...
               </div>
-            ))}
-            <Button
-              variant="outline"
-              className="w-full"
-              onClick={() => router.navigate({ to: "/dashboard/calendar" })}
-            >
-              View Calendar
-            </Button>
+            ) : events.length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground">
+                No upcoming events
+              </div>
+            ) : (
+              <>
+                {events.map((event) => (
+                  <div
+                    key={event.id}
+                    className="flex items-start space-x-3 p-3 rounded-lg border"
+                  >
+                    <div className="bg-primary/10 p-2 rounded-full">
+                      <Calendar className="h-4 w-4 text-primary" />
+                    </div>
+                    <div className="flex-1 space-y-1">
+                      <p className="text-sm font-medium">{event.title}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {new Date(event.startTime).toLocaleString()}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        📍 {event.location}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+                <Button
+                  variant="outline"
+                  className="w-full"
+                  onClick={() => router.navigate({ to: "/dashboard/calendar" })}
+                >
+                  View Calendar
+                </Button>
+              </>
+            )}
           </CardContent>
         </Card>
       </div>
