@@ -41,7 +41,11 @@ export const getUsers = async (filters?: {
       constraints.push(where('isActive', '==', filters.isActive));
     }
 
-    constraints.push(orderBy('createdAt', 'desc'));
+    // Only add orderBy if no where clauses (to avoid index requirement)
+    // We'll sort client-side instead
+    if (constraints.length === 0) {
+      constraints.push(orderBy('createdAt', 'desc'));
+    }
 
     const q = query(collection(db, 'users'), ...constraints);
     const snapshot = await getDocs(q);
@@ -51,6 +55,15 @@ export const getUsers = async (filters?: {
       createdAt: doc.data().createdAt?.toDate(),
       updatedAt: doc.data().updatedAt?.toDate(),
     })) as UserProfile[];
+
+    // Client-side sorting when we have filters
+    if (constraints.length > 0) {
+      users.sort((a, b) => {
+        const timeA = a.createdAt?.getTime() || 0;
+        const timeB = b.createdAt?.getTime() || 0;
+        return timeB - timeA; // desc order
+      });
+    }
 
     // Client-side search filter (Firestore doesn't support full-text search)
     if (filters?.searchTerm) {
