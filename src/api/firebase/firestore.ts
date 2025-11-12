@@ -17,6 +17,7 @@ import {
   Timestamp,
   arrayUnion,
   arrayRemove,
+  increment,
 } from 'firebase/firestore';
 import { db } from '@/config/firebase';
 import { UserProfile } from './auth';
@@ -271,6 +272,20 @@ export const markAnnouncementAsRead = async (
     });
   } catch (error) {
     console.error('Mark announcement as read error:', error);
+    throw error;
+  }
+};
+
+export const incrementAnnouncementView = async (
+  announcementId: string
+): Promise<void> => {
+  try {
+    const docRef = doc(db, 'announcements', announcementId);
+    await updateDoc(docRef, {
+      viewCount: increment(1),
+    });
+  } catch (error) {
+    console.error('Increment announcement view error:', error);
     throw error;
   }
 };

@@ -12,7 +12,7 @@ import { SelectDropdown } from "@/components/select-dropdown";
 import { getCurrentUser } from "@/guards/useAuthGuard";
 import { toast } from "sonner";
 import { subscribeToAnnouncements } from "@/api/firebase/realtime";
-import { createAnnouncement, updateAnnouncement, deleteAnnouncement, type Announcement } from "@/api/firebase/firestore";
+import { createAnnouncement, updateAnnouncement, deleteAnnouncement, incrementAnnouncementView, type Announcement } from "@/api/firebase/firestore";
 
 const priorityOptions = [
   { label: "Normal", value: "normal" },
@@ -143,9 +143,19 @@ export default function Announcements() {
     setShowCreateDialog(true);
   };
 
-  const openViewDialog = (announcement: Announcement) => {
+  const openViewDialog = async (announcement: Announcement) => {
     setViewingAnnouncement(announcement);
     setShowViewDialog(true);
+
+    // Increment view count
+    if (announcement.id) {
+      try {
+        await incrementAnnouncementView(announcement.id);
+      } catch (error) {
+        console.error("Error incrementing view count:", error);
+        // Don't show error to user, this is a background operation
+      }
+    }
   };
 
   const closeDialog = () => {

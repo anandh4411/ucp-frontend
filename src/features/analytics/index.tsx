@@ -1,23 +1,24 @@
 import { useState } from "react";
 import {
-  Activity,
   Users,
   MessageSquare,
   Megaphone,
   FolderOpen,
-  TrendingUp,
-  Clock,
-  Server,
   Download,
   Eye,
   BarChart3,
-  PieChart,
+  Calendar,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useFirebaseStats } from "@/hooks/useFirebaseStats";
-import analyticsData from "@/data/analytics.json";
+import {
+  useUserEngagement,
+  useAnnouncementAnalytics,
+  useResourceAnalytics,
+  useMessageAnalytics,
+} from "@/hooks/useAnalytics";
 
 // Stat Card Component
 const StatCard = ({
@@ -51,10 +52,7 @@ const StatCard = ({
             trendUp ? "text-green-600" : "text-red-600"
           }`}
         >
-          <TrendingUp
-            className={`h-3 w-3 mr-1 ${!trendUp && "rotate-180"}`}
-          />
-          {trend}
+          <span>{trend}</span>
         </div>
       )}
     </CardContent>
@@ -62,7 +60,7 @@ const StatCard = ({
 );
 
 // Simple Bar Chart Component
-const SimpleBarChart = ({ data, dataKey, valueKey, title }: any) => {
+const SimpleBarChart = ({ data, dataKey, valueKey }: any) => {
   const maxValue = Math.max(...data.map((item: any) => item[valueKey]));
 
   return (
@@ -85,41 +83,7 @@ const SimpleBarChart = ({ data, dataKey, valueKey, title }: any) => {
   );
 };
 
-// Simple Line Chart Component (Weekly Activity)
-const SimpleLineChart = ({ data }: any) => {
-  const maxValue = Math.max(...data.map((item: any) => item.users));
-  const minValue = Math.min(...data.map((item: any) => item.users));
-
-  return (
-    <div className="space-y-4">
-      <div className="flex items-end justify-between h-40 gap-2">
-        {data.map((item: any, index: number) => {
-          const heightPercent =
-            ((item.users - minValue) / (maxValue - minValue)) * 100;
-          return (
-            <div key={index} className="flex-1 flex flex-col items-center gap-2">
-              <div className="w-full flex items-end justify-center h-32">
-                <div
-                  className="bg-primary rounded-t-md w-full transition-all hover:opacity-80"
-                  style={{ height: `${heightPercent}%`, minHeight: "20px" }}
-                  title={`${item.users} users`}
-                />
-              </div>
-              <span className="text-xs text-muted-foreground">
-                {new Date(item.date).toLocaleDateString("en-US", {
-                  month: "short",
-                  day: "numeric",
-                })}
-              </span>
-            </div>
-          );
-        })}
-      </div>
-    </div>
-  );
-};
-
-// Pie Chart Component (using simple CSS)
+// Pie Chart Component
 const SimplePieChart = ({ data, dataKey, valueKey }: any) => {
   const total = data.reduce((sum: number, item: any) => sum + item[valueKey], 0);
   const colors = [
@@ -133,7 +97,7 @@ const SimplePieChart = ({ data, dataKey, valueKey }: any) => {
   return (
     <div className="space-y-3">
       {data.map((item: any, index: number) => {
-        const percentage = ((item[valueKey] / total) * 100).toFixed(1);
+        const percentage = total > 0 ? ((item[valueKey] / total) * 100).toFixed(1) : "0.0";
         return (
           <div key={index} className="flex items-center justify-between">
             <div className="flex items-center gap-2 flex-1">
@@ -151,124 +115,143 @@ const SimplePieChart = ({ data, dataKey, valueKey }: any) => {
   );
 };
 
+// Format bytes to human readable
+const formatBytes = (bytes: number): string => {
+  if (bytes === 0) return "0 B";
+  const k = 1024;
+  const sizes = ["B", "KB", "MB", "GB"];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  return Math.round((bytes / Math.pow(k, i)) * 100) / 100 + " " + sizes[i];
+};
+
 export default function Analytics() {
   const [activeTab, setActiveTab] = useState("overview");
   const stats = useFirebaseStats();
+  const userEngagement = useUserEngagement();
+  const announcementAnalytics = useAnnouncementAnalytics();
+  const resourceAnalytics = useResourceAnalytics();
+  const messageAnalytics = useMessageAnalytics();
+
+  const isLoading =
+    stats.loading ||
+    userEngagement.loading ||
+    announcementAnalytics.loading ||
+    resourceAnalytics.loading ||
+    messageAnalytics.loading;
+
+  if (isLoading) {
+    return (
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">Analytics Dashboard</h1>
+          <p className="text-muted-foreground">Loading analytics data...</p>
+        </div>
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+          {[1, 2, 3, 4].map((i) => (
+            <Card key={i}>
+              <CardHeader>
+                <div className="h-4 w-24 bg-muted animate-pulse rounded" />
+              </CardHeader>
+              <CardContent>
+                <div className="h-8 w-16 bg-muted animate-pulse rounded" />
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  const hasError =
+    userEngagement.error ||
+    announcementAnalytics.error ||
+    resourceAnalytics.error ||
+    messageAnalytics.error;
+
+  if (hasError) {
+    return (
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">Analytics Dashboard</h1>
+          <p className="text-destructive">Error loading analytics data</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">
-            Analytics Dashboard
-          </h1>
-          <p className="text-muted-foreground">
-            Communication trends and user engagement metrics
-          </p>
-        </div>
-        <Badge variant="default" className="text-sm">
-          Last updated: {new Date().toLocaleDateString()}
-        </Badge>
+      <div>
+        <h1 className="text-3xl font-bold tracking-tight">Analytics Dashboard</h1>
+        <p className="text-muted-foreground">
+          Comprehensive insights into unit communication and activity
+        </p>
       </div>
 
-      {/* Overview Stats */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <StatCard
-          title="Total Users"
-          value={stats.loading ? "..." : stats.totalUsers}
-          icon={Users}
-          description={`${stats.activeUsers} active users`}
-        />
-        <StatCard
-          title="Conversations"
-          value={stats.loading ? "..." : stats.totalConversations}
-          icon={MessageSquare}
-          description="All conversations"
-        />
-        <StatCard
-          title="Announcements"
-          value={stats.loading ? "..." : stats.totalAnnouncements}
-          icon={Megaphone}
-          description="Published announcements"
-        />
-        <StatCard
-          title="Resources Shared"
-          value={stats.loading ? "..." : stats.totalResources}
-          icon={FolderOpen}
-          description="Documents & files"
-        />
-      </div>
-
-      {/* Tabbed Content */}
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-        <TabsList>
+      <Tabs value={activeTab} onValueChange={setActiveTab}>
+        <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="messages">Messages</TabsTrigger>
           <TabsTrigger value="announcements">Announcements</TabsTrigger>
           <TabsTrigger value="resources">Resources</TabsTrigger>
-          <TabsTrigger value="engagement">Engagement</TabsTrigger>
         </TabsList>
 
         {/* Overview Tab */}
         <TabsContent value="overview" className="space-y-4">
-          <div className="grid gap-4 md:grid-cols-2">
-            {/* User Activity */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Activity className="h-5 w-5" />
-                  Daily Active Users
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <SimpleLineChart data={analyticsData.userActivity.daily} />
-              </CardContent>
-            </Card>
+          {/* Key Metrics */}
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+            <StatCard
+              title="Total Users"
+              value={stats.totalUsers}
+              icon={Users}
+              description="Registered personnel"
+            />
+            <StatCard
+              title="Active Users (7d)"
+              value={userEngagement.activeUsers7Days}
+              icon={Users}
+              description="Users active in last 7 days"
+            />
+            <StatCard
+              title="Total Conversations"
+              value={messageAnalytics.totalConversations}
+              icon={MessageSquare}
+              description="All message threads"
+            />
+            <StatCard
+              title="Total Announcements"
+              value={stats.totalAnnouncements}
+              icon={Megaphone}
+              description="Official announcements"
+            />
+          </div>
 
-            {/* Performance Metrics */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Server className="h-5 w-5" />
-                  System Performance
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium">System Uptime</span>
-                    <Badge variant="default">
-                      {analyticsData.performanceMetrics.systemUptime}%
-                    </Badge>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium">Avg Load Time</span>
-                    <Badge variant="secondary">
-                      {analyticsData.performanceMetrics.avgLoadTime}
-                    </Badge>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium">Error Rate</span>
-                    <Badge variant="secondary">
-                      {analyticsData.performanceMetrics.errorRate}%
-                    </Badge>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium">API Response</span>
-                    <Badge variant="secondary">
-                      {analyticsData.performanceMetrics.apiResponseTime}
-                    </Badge>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium">Avg Response Time</span>
-                    <Badge variant="secondary">
-                      {analyticsData.overview.avgResponseTime}
-                    </Badge>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+            <StatCard
+              title="Total Resources"
+              value={stats.totalResources}
+              icon={FolderOpen}
+              description="Shared documents & files"
+            />
+            <StatCard
+              title="Total Events"
+              value={stats.totalEvents}
+              icon={Calendar}
+              description="Calendar events"
+            />
+            <StatCard
+              title="Active Users (30d)"
+              value={userEngagement.activeUsers30Days}
+              icon={Users}
+              description="Users active in last 30 days"
+            />
+            <StatCard
+              title="Storage Used"
+              value={formatBytes(resourceAnalytics.totalStorage)}
+              icon={FolderOpen}
+              description="Total file storage"
+            />
           </div>
         </TabsContent>
 
@@ -278,15 +261,18 @@ export default function Analytics() {
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <BarChart3 className="h-5 w-5" />
+                  <MessageSquare className="h-5 w-5" />
                   Messages by Type
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <SimplePieChart
-                  data={analyticsData.messageStats.byType}
-                  dataKey="type"
-                  valueKey="count"
+                <SimpleBarChart
+                  data={[
+                    { name: "Individual Chats", value: messageAnalytics.individualChats },
+                    { name: "Group Chats", value: messageAnalytics.groupChats },
+                  ]}
+                  dataKey="name"
+                  valueKey="value"
                 />
               </CardContent>
             </Card>
@@ -294,55 +280,23 @@ export default function Analytics() {
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <PieChart className="h-5 w-5" />
+                  <BarChart3 className="h-5 w-5" />
                   Messages by Priority
                 </CardTitle>
               </CardHeader>
               <CardContent>
                 <SimplePieChart
-                  data={analyticsData.messageStats.byPriority}
-                  dataKey="priority"
-                  valueKey="count"
+                  data={[
+                    { name: "Urgent", value: messageAnalytics.urgentConversations },
+                    { name: "Important", value: messageAnalytics.importantConversations },
+                    { name: "Normal", value: messageAnalytics.normalConversations },
+                  ]}
+                  dataKey="name"
+                  valueKey="value"
                 />
               </CardContent>
             </Card>
           </div>
-
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Clock className="h-5 w-5" />
-                Message Response Rate
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium">Responded</span>
-                  <span className="text-2xl font-bold text-green-600">
-                    {analyticsData.messageStats.responseRate.responded}
-                  </span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium">Pending</span>
-                  <span className="text-2xl font-bold text-yellow-600">
-                    {analyticsData.messageStats.responseRate.pending}
-                  </span>
-                </div>
-                <div className="w-full bg-muted rounded-full h-3">
-                  <div
-                    className="bg-green-600 rounded-full h-3"
-                    style={{
-                      width: `${analyticsData.messageStats.responseRate.rate}%`,
-                    }}
-                  />
-                </div>
-                <p className="text-sm text-muted-foreground text-center">
-                  {analyticsData.messageStats.responseRate.rate}% response rate
-                </p>
-              </div>
-            </CardContent>
-          </Card>
         </TabsContent>
 
         {/* Announcements Tab */}
@@ -356,11 +310,12 @@ export default function Analytics() {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <SimpleBarChart
-                  data={analyticsData.announcementStats.byCategory}
-                  dataKey="category"
-                  valueKey="count"
-                  title="Category Distribution"
+                <SimplePieChart
+                  data={Object.entries(announcementAnalytics.byCategory).map(
+                    ([name, value]) => ({ name, value })
+                  )}
+                  dataKey="name"
+                  valueKey="value"
                 />
               </CardContent>
             </Card>
@@ -373,27 +328,70 @@ export default function Analytics() {
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium">Total Views</span>
-                  <span className="text-2xl font-bold">
-                    {analyticsData.announcementStats.engagement.totalViews}
-                  </span>
+                <div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-muted-foreground">Total Views</span>
+                    <span className="text-lg font-bold">
+                      {announcementAnalytics.totalViews}
+                    </span>
+                  </div>
                 </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium">Avg Views/Post</span>
-                  <Badge variant="secondary">
-                    {analyticsData.announcementStats.engagement.avgViewsPerAnnouncement}
-                  </Badge>
+                <div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-muted-foreground">
+                      Avg Views / Announcement
+                    </span>
+                    <span className="text-lg font-bold">
+                      {announcementAnalytics.avgViewsPerAnnouncement.toFixed(1)}
+                    </span>
+                  </div>
                 </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium">Read Rate</span>
-                  <Badge variant="default">
-                    {analyticsData.announcementStats.engagement.readRate}%
-                  </Badge>
+                <div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-muted-foreground">Read Rate</span>
+                    <Badge variant="default" className="text-sm">
+                      {announcementAnalytics.avgReadRate.toFixed(1)}%
+                    </Badge>
+                  </div>
                 </div>
               </CardContent>
             </Card>
           </div>
+
+          {/* Top Announcements */}
+          {announcementAnalytics.topAnnouncements.length > 0 && (
+            <Card>
+              <CardHeader>
+                <CardTitle>Most Viewed Announcements</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  {announcementAnalytics.topAnnouncements.map((announcement, index) => (
+                    <div
+                      key={announcement.id}
+                      className="flex items-center justify-between p-3 rounded-lg bg-muted/50"
+                    >
+                      <div className="flex items-center gap-3">
+                        <span className="flex items-center justify-center w-8 h-8 rounded-full bg-primary text-primary-foreground text-sm font-bold">
+                          {index + 1}
+                        </span>
+                        <div>
+                          <p className="font-medium">{announcement.title}</p>
+                          <p className="text-xs text-muted-foreground">
+                            {announcement.category}
+                          </p>
+                        </div>
+                      </div>
+                      <Badge variant="secondary">
+                        <Eye className="h-3 w-3 mr-1" />
+                        {announcement.views} views
+                      </Badge>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          )}
         </TabsContent>
 
         {/* Resources Tab */}
@@ -408,14 +406,22 @@ export default function Analytics() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
-                  {analyticsData.resourceUsage.byType.map((item, index) => (
-                    <div key={index} className="space-y-2">
+                  {Object.entries(resourceAnalytics.byType).map(([type, stats]) => (
+                    <div key={type} className="space-y-2">
                       <div className="flex items-center justify-between text-sm">
-                        <span className="font-medium">{item.type}</span>
+                        <span className="font-medium">{type}</span>
                         <div className="flex items-center gap-2">
-                          <span className="text-muted-foreground">{item.count}</span>
-                          <Badge variant="secondary">{item.size}</Badge>
+                          <span className="text-muted-foreground">{stats.count} files</span>
+                          <Badge variant="secondary">{formatBytes(stats.size)}</Badge>
                         </div>
+                      </div>
+                      <div className="w-full bg-muted rounded-full h-2">
+                        <div
+                          className="bg-primary rounded-full h-2 transition-all"
+                          style={{
+                            width: `${(stats.size / resourceAnalytics.totalStorage) * 100}%`,
+                          }}
+                        />
                       </div>
                     </div>
                   ))}
@@ -432,96 +438,30 @@ export default function Analytics() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
-                  {analyticsData.resourceUsage.mostDownloaded.map((item, index) => (
+                  {resourceAnalytics.mostDownloaded.map((resource, index) => (
                     <div
-                      key={item.id}
-                      className="flex items-center justify-between p-3 rounded-lg border"
+                      key={resource.id}
+                      className="flex items-center justify-between p-3 rounded-lg bg-muted/50"
                     >
-                      <div className="space-y-1 flex-1">
-                        <p className="text-sm font-medium">{item.name}</p>
-                        <p className="text-xs text-muted-foreground">
-                          {item.category}
-                        </p>
+                      <div className="flex items-center gap-3">
+                        <span className="flex items-center justify-center w-8 h-8 rounded-full bg-primary text-primary-foreground text-sm font-bold">
+                          {index + 1}
+                        </span>
+                        <div className="min-w-0">
+                          <p className="font-medium truncate">{resource.name}</p>
+                          <p className="text-xs text-muted-foreground">{resource.type}</p>
+                        </div>
                       </div>
-                      <Badge variant="default">{item.downloads} downloads</Badge>
+                      <Badge variant="secondary">
+                        <Download className="h-3 w-3 mr-1" />
+                        {resource.downloads}
+                      </Badge>
                     </div>
                   ))}
                 </div>
               </CardContent>
             </Card>
           </div>
-        </TabsContent>
-
-        {/* Engagement Tab */}
-        <TabsContent value="engagement" className="space-y-4">
-          <div className="grid gap-4 md:grid-cols-2">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Users className="h-5 w-5" />
-                  Login Frequency
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <SimplePieChart
-                  data={[
-                    {
-                      label: "Daily",
-                      value: analyticsData.engagementMetrics.loginFrequency.daily,
-                    },
-                    {
-                      label: "Weekly",
-                      value: analyticsData.engagementMetrics.loginFrequency.weekly,
-                    },
-                    {
-                      label: "Monthly",
-                      value: analyticsData.engagementMetrics.loginFrequency.monthly,
-                    },
-                  ]}
-                  dataKey="label"
-                  valueKey="value"
-                />
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Activity className="h-5 w-5" />
-                  Device Breakdown
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <SimplePieChart
-                  data={analyticsData.engagementMetrics.deviceBreakdown.map(
-                    (item) => ({
-                      device: item.device,
-                      percentage: item.percentage,
-                    })
-                  )}
-                  dataKey="device"
-                  valueKey="percentage"
-                />
-              </CardContent>
-            </Card>
-          </div>
-
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Clock className="h-5 w-5" />
-                Peak Activity Hours
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <SimpleBarChart
-                data={analyticsData.engagementMetrics.peakHours}
-                dataKey="hour"
-                valueKey="users"
-                title="Peak Hours"
-              />
-            </CardContent>
-          </Card>
         </TabsContent>
       </Tabs>
     </div>
