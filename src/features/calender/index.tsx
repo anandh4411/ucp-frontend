@@ -31,7 +31,7 @@ export default function Calendar() {
   const canManage = hasRole(["adjt", "it_jco"]);
 
   const [currentDate, setCurrentDate] = useState(new Date());
-  const [view, setView] = useState<"day" | "week" | "month">("week");
+  const [view, setView] = useState<"day" | "week" | "month">("month");
   const [events, setEvents] = useState<CalendarEvent[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null);
@@ -350,11 +350,11 @@ export default function Calendar() {
   const nextMonthDays = getNextMonthDays();
 
   return (
-    <div className="relative bg-stone-50 min-h-screen">
+    <div className="relative bg-background min-h-screen">
       {/* Background decorations */}
-      <div className="bg-sky-400 w-40 h-40 rounded-full absolute top-1 right-0 opacity-20 z-0 blur-3xl" />
-      <div className="bg-emerald-500 w-40 h-24 absolute top-0 left-0 opacity-20 z-0 blur-3xl" />
-      <div className="bg-purple-600 w-40 h-24 absolute top-40 left-0 opacity-20 z-0 blur-3xl" />
+      <div className="bg-sky-400 dark:bg-sky-600 w-40 h-40 rounded-full absolute top-1 right-0 opacity-20 dark:opacity-10 z-0 blur-3xl" />
+      <div className="bg-emerald-500 dark:bg-emerald-600 w-40 h-24 absolute top-0 left-0 opacity-20 dark:opacity-10 z-0 blur-3xl" />
+      <div className="bg-purple-600 dark:bg-purple-700 w-40 h-24 absolute top-40 left-0 opacity-20 dark:opacity-10 z-0 blur-3xl" />
 
       <div className="w-full py-12 relative z-10">
         <div className="w-full max-w-7xl mx-auto px-4 lg:px-8">
@@ -363,8 +363,8 @@ export default function Calendar() {
             <div className="col-span-12 xl:col-span-5">
               <div className="flex items-center justify-between mb-6">
                 <div>
-                  <h2 className="font-semibold text-3xl leading-tight text-gray-900 mb-1.5">Upcoming Events</h2>
-                  <p className="text-lg font-normal text-gray-600">Don't miss schedule</p>
+                  <h2 className="font-semibold text-3xl leading-tight text-foreground mb-1.5">Upcoming Events</h2>
+                  <p className="text-lg font-normal text-muted-foreground">Don't miss schedule</p>
                 </div>
                 {canManage && (
                   <Button onClick={() => openCreateDialog()} size="sm">
@@ -375,21 +375,21 @@ export default function Calendar() {
 
               <div className="flex gap-5 flex-col">
                 {upcomingEvents.length === 0 ? (
-                  <div className="p-6 rounded-xl bg-white text-center text-gray-500">No upcoming events</div>
+                  <div className="p-6 rounded-xl bg-card text-center text-muted-foreground">No upcoming events</div>
                 ) : (
                   upcomingEvents.map((event) => (
-                    <div key={event.id} className="p-6 rounded-xl bg-white shadow-sm hover:shadow-md transition-shadow">
+                    <div key={event.id} className="p-6 rounded-xl bg-card shadow-sm hover:shadow-md transition-shadow">
                       <div className="flex items-center justify-between mb-3">
                         <div className="flex items-center gap-2.5">
                           <span className={`w-2.5 h-2.5 rounded-full ${getCategoryColor(event.category)}`} />
-                          <p className="text-base font-medium text-gray-900">
+                          <p className="text-base font-medium text-foreground">
                             {formatDate(event.startTime)} - {formatTime(event.startTime)} - {formatTime(event.endTime)}
                           </p>
                         </div>
                         {canManage && (
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
-                              <button className="inline-flex justify-center py-2.5 px-1 items-center gap-2 text-sm text-black rounded-full cursor-pointer font-semibold text-center transition-all duration-500 hover:text-purple-600">
+                              <button className="inline-flex justify-center py-2.5 px-1 items-center gap-2 text-sm text-foreground rounded-full cursor-pointer font-semibold text-center transition-all duration-500 hover:text-primary">
                                 <svg xmlns="http://www.w3.org/2000/svg" width="12" height="4" viewBox="0 0 12 4" fill="none">
                                   <path d="M1.85624 2.00085H1.81458M6.0343 2.00085H5.99263M10.2124 2.00085H10.1707" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
                                 </svg>
@@ -408,9 +408,9 @@ export default function Calendar() {
                           </DropdownMenu>
                         )}
                       </div>
-                      <h6 className="text-xl leading-8 font-semibold text-black mb-1">{event.title}</h6>
-                      <p className="text-base font-normal text-gray-600 line-clamp-2">{event.description}</p>
-                      <p className="text-sm font-normal text-gray-500 mt-2">{event.location}</p>
+                      <h6 className="text-xl leading-8 font-semibold text-card-foreground mb-1">{event.title}</h6>
+                      <p className="text-base font-normal text-muted-foreground line-clamp-2">{event.description}</p>
+                      <p className="text-sm font-normal text-muted-foreground mt-2">{event.location}</p>
                     </div>
                   ))
                 )}
@@ -418,10 +418,10 @@ export default function Calendar() {
             </div>
 
             {/* Calendar Section */}
-            <div className="col-span-12 xl:col-span-7 px-2.5 py-5 sm:p-8 bg-gradient-to-b from-white/25 to-white xl:bg-white rounded-2xl max-xl:row-start-1">
+            <div className="col-span-12 xl:col-span-7 px-2.5 py-5 sm:p-8 bg-gradient-to-b from-card/25 to-card xl:bg-card rounded-2xl max-xl:row-start-1">
               <div className="flex flex-col md:flex-row gap-4 items-center justify-between mb-5">
                 <div className="flex items-center gap-4">
-                  <h5 className="text-xl leading-8 font-semibold text-gray-900">
+                  <h5 className="text-xl leading-8 font-semibold text-foreground">
                     {view === "day"
                       ? currentDate.toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })
                       : view === "week"
@@ -431,23 +431,23 @@ export default function Calendar() {
                   <div className="flex items-center">
                     <button
                       onClick={goToPrevious}
-                      className="text-indigo-600 p-1 rounded transition-all duration-300 hover:text-white hover:bg-indigo-600"
+                      className="text-primary p-1 rounded transition-all duration-300 hover:text-primary-foreground hover:bg-primary"
                     >
                       <ChevronLeft className="h-4 w-4" />
                     </button>
                     <button
                       onClick={goToNext}
-                      className="text-indigo-600 p-1 rounded transition-all duration-300 hover:text-white hover:bg-indigo-600"
+                      className="text-primary p-1 rounded transition-all duration-300 hover:text-primary-foreground hover:bg-primary"
                     >
                       <ChevronRight className="h-4 w-4" />
                     </button>
                   </div>
                 </div>
-                <div className="flex items-center rounded-md p-1 bg-indigo-50 gap-px">
+                <div className="flex items-center rounded-md p-1 bg-secondary gap-px">
                   <button
                     onClick={() => setView("day")}
                     className={`py-2.5 px-5 rounded-lg text-sm font-medium transition-all duration-300 ${
-                      view === "day" ? "bg-indigo-600 text-white" : "bg-indigo-50 text-indigo-600 hover:bg-indigo-600 hover:text-white"
+                      view === "day" ? "bg-primary text-primary-foreground" : "bg-secondary text-primary hover:bg-primary hover:text-primary-foreground"
                     }`}
                   >
                     Day
@@ -455,7 +455,7 @@ export default function Calendar() {
                   <button
                     onClick={() => setView("week")}
                     className={`py-2.5 px-5 rounded-lg text-sm font-medium transition-all duration-300 ${
-                      view === "week" ? "bg-indigo-600 text-white" : "bg-indigo-50 text-indigo-600 hover:bg-indigo-600 hover:text-white"
+                      view === "week" ? "bg-primary text-primary-foreground" : "bg-secondary text-primary hover:bg-primary hover:text-primary-foreground"
                     }`}
                   >
                     Week
@@ -463,7 +463,7 @@ export default function Calendar() {
                   <button
                     onClick={() => setView("month")}
                     className={`py-2.5 px-5 rounded-lg text-sm font-medium transition-all duration-300 ${
-                      view === "month" ? "bg-indigo-600 text-white" : "bg-indigo-50 text-indigo-600 hover:bg-indigo-600 hover:text-white"
+                      view === "month" ? "bg-primary text-primary-foreground" : "bg-secondary text-primary hover:bg-primary hover:text-primary-foreground"
                     }`}
                   >
                     Month
@@ -473,15 +473,15 @@ export default function Calendar() {
 
               {/* Conditional View Rendering */}
               {view === "month" && (
-                <div className="border border-indigo-200 rounded-xl overflow-hidden">
+                <div className="border border-border rounded-xl overflow-hidden">
                   {/* Day Headers */}
-                  <div className="grid grid-cols-7 rounded-t-3xl border-b border-indigo-200">
+                  <div className="grid grid-cols-7 rounded-t-3xl border-b border-border">
                     {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((day, i) => (
                       <div
                         key={day}
-                        className={`py-3.5 bg-indigo-50 flex items-center justify-center text-sm font-medium text-indigo-600 ${
+                        className={`py-3.5 bg-secondary flex items-center justify-center text-sm font-medium text-primary ${
                           i === 0 ? "rounded-tl-xl border-r" : i === 6 ? "rounded-tr-xl" : "border-r"
-                        } border-indigo-200`}
+                        } border-border`}
                       >
                         {day}
                       </div>
@@ -494,11 +494,11 @@ export default function Calendar() {
                     {prevMonthDays.map((day, i) => (
                       <div
                         key={`prev-${i}`}
-                        className={`flex xl:aspect-square max-xl:min-h-[60px] p-3.5 bg-gray-50 border-indigo-200 transition-all duration-300 hover:bg-indigo-50 ${
+                        className={`flex xl:aspect-square max-xl:min-h-[60px] p-3.5 bg-muted border-border transition-all duration-300 hover:bg-secondary ${
                           i < 6 ? "border-r" : ""
                         } border-b`}
                       >
-                        <span className="text-xs font-semibold text-gray-400">{day}</span>
+                        <span className="text-xs font-semibold text-muted-foreground">{day}</span>
                       </div>
                     ))}
 
@@ -512,24 +512,22 @@ export default function Calendar() {
                         <div
                           key={day}
                           onClick={() => handleDayClick(day)}
-                          className={`flex xl:aspect-square max-xl:min-h-[60px] p-3.5 relative bg-white border-indigo-200 transition-all duration-300 hover:bg-indigo-50 cursor-pointer ${
+                          className={`flex xl:aspect-square max-xl:min-h-[60px] p-3.5 relative bg-background border-border transition-all duration-300 hover:bg-secondary cursor-pointer ${
                             dayOfWeek !== 6 ? "border-r" : ""
                           } border-b`}
                         >
                           <span
                             className={`text-xs font-semibold ${
                               isTodayDate
-                                ? "text-white w-6 h-6 rounded-full flex items-center justify-center bg-indigo-600"
-                                : "text-gray-900"
+                                ? "text-primary-foreground w-6 h-6 rounded-full flex items-center justify-center bg-primary"
+                                : "text-foreground"
                             }`}
                           >
                             {day}
                           </span>
                           {dayEvents.length > 0 && (
                             <Badge
-                              className={`absolute top-2 right-2 h-6 w-6 flex items-center justify-center p-0 rounded-full text-xs font-semibold ${getCategoryColor(
-                                dayEvents[0].category
-                              )} text-white`}
+                              className="absolute top-2 right-2 h-6 w-6 flex items-center justify-center p-0 rounded-full text-xs font-semibold bg-accent text-accent-foreground border-0"
                             >
                               {dayEvents.length}
                             </Badge>
@@ -542,11 +540,11 @@ export default function Calendar() {
                     {nextMonthDays.map((day, i) => (
                       <div
                         key={`next-${i}`}
-                        className={`flex xl:aspect-square max-xl:min-h-[60px] p-3.5 bg-gray-50 border-indigo-200 transition-all duration-300 hover:bg-indigo-50 ${
+                        className={`flex xl:aspect-square max-xl:min-h-[60px] p-3.5 bg-muted border-border transition-all duration-300 hover:bg-secondary ${
                           i === 0 ? "rounded-bl-xl" : ""
                         } ${i === nextMonthDays.length - 1 ? "rounded-br-xl" : ""} ${i < nextMonthDays.length - 1 ? "border-r" : ""}`}
                       >
-                        <span className="text-xs font-semibold text-gray-400">{day}</span>
+                        <span className="text-xs font-semibold text-muted-foreground">{day}</span>
                       </div>
                     ))}
                   </div>
@@ -555,7 +553,7 @@ export default function Calendar() {
 
               {/* Day View */}
               {view === "day" && (
-                <div className="border border-indigo-200 rounded-xl overflow-hidden bg-white">
+                <div className="border border-border rounded-xl overflow-hidden bg-background">
                   <div className="max-h-[600px] overflow-y-auto">
                     {Array.from({ length: 24 }, (_, hour) => {
                       const dayEvents = getEventsForDate(currentDate).filter((event) => {
@@ -564,9 +562,9 @@ export default function Calendar() {
                       });
 
                       return (
-                        <div key={hour} className="flex border-b border-indigo-100 min-h-[60px]">
-                          <div className="w-20 flex-shrink-0 bg-indigo-50 p-3 border-r border-indigo-200">
-                            <span className="text-sm font-medium text-indigo-600">
+                        <div key={hour} className="flex border-b border-border min-h-[60px]">
+                          <div className="w-20 flex-shrink-0 bg-secondary p-3 border-r border-border">
+                            <span className="text-sm font-medium text-primary">
                               {hour.toString().padStart(2, "0")}:00
                             </span>
                           </div>
@@ -599,25 +597,25 @@ export default function Calendar() {
 
               {/* Week View */}
               {view === "week" && (
-                <div className="border border-indigo-200 rounded-xl overflow-hidden bg-white">
+                <div className="border border-border rounded-xl overflow-hidden bg-background">
                   <div className="overflow-x-auto">
                     <div className="min-w-[800px]">
                       {/* Week day headers */}
-                      <div className="grid grid-cols-8 border-b border-indigo-200">
-                        <div className="bg-indigo-50 p-3 border-r border-indigo-200"></div>
+                      <div className="grid grid-cols-8 border-b border-border">
+                        <div className="bg-secondary p-3 border-r border-border"></div>
                         {getWeekDays(currentDate).map((date, i) => {
                           const isCurrentDay =
                             date.toDateString() === new Date().toDateString();
                           return (
                             <div
                               key={i}
-                              className={`bg-indigo-50 p-3 text-center ${
-                                i < 6 ? "border-r border-indigo-200" : ""
+                              className={`bg-secondary p-3 text-center ${
+                                i < 6 ? "border-r border-border" : ""
                               }`}
                             >
                               <div
                                 className={`text-sm font-medium ${
-                                  isCurrentDay ? "text-indigo-600" : "text-gray-700"
+                                  isCurrentDay ? "text-primary" : "text-foreground"
                                 }`}
                               >
                                 {date.toLocaleDateString("en-US", { weekday: "short" })}
@@ -625,8 +623,8 @@ export default function Calendar() {
                               <div
                                 className={`text-xs mt-1 ${
                                   isCurrentDay
-                                    ? "w-6 h-6 rounded-full bg-indigo-600 text-white flex items-center justify-center mx-auto"
-                                    : "text-gray-500"
+                                    ? "w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center mx-auto"
+                                    : "text-muted-foreground"
                                 }`}
                               >
                                 {date.getDate()}
@@ -639,9 +637,9 @@ export default function Calendar() {
                       {/* Time grid */}
                       <div className="max-h-[500px] overflow-y-auto">
                         {Array.from({ length: 24 }, (_, hour) => (
-                          <div key={hour} className="grid grid-cols-8 border-b border-indigo-100 min-h-[50px]">
-                            <div className="bg-indigo-50 p-2 border-r border-indigo-200">
-                              <span className="text-xs font-medium text-indigo-600">
+                          <div key={hour} className="grid grid-cols-8 border-b border-border min-h-[50px]">
+                            <div className="bg-secondary p-2 border-r border-border">
+                              <span className="text-xs font-medium text-primary">
                                 {hour.toString().padStart(2, "0")}:00
                               </span>
                             </div>
@@ -655,7 +653,7 @@ export default function Calendar() {
                                 <div
                                   key={dayIndex}
                                   className={`p-1 relative ${
-                                    dayIndex < 6 ? "border-r border-indigo-100" : ""
+                                    dayIndex < 6 ? "border-r border-border" : ""
                                   }`}
                                 >
                                   {dayEvents.length > 0 ? (
