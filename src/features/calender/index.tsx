@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Calendar as CalendarIcon,
   Plus,
@@ -39,6 +39,8 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { getCurrentUser, hasRole } from "@/guards/useAuthGuard";
 import { toast } from "sonner";
+import { subscribeToEvents } from "@/api/firebase/realtime";
+import { createEvent, updateEvent, deleteEvent, type CalendarEvent } from "@/api/firebase/firestore";
 
 // Dummy data
 const eventsData = [

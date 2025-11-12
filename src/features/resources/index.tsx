@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   FolderOpen,
   Search,
@@ -42,6 +42,15 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { getCurrentUser, hasRole } from "@/guards/useAuthGuard";
 import { toast } from "sonner";
+import { subscribeToResources } from "@/api/firebase/realtime";
+import {
+  createResource,
+  deleteResource,
+  incrementResourceDownloads,
+  type Resource,
+} from "@/api/firebase/firestore";
+import { uploadFile, getFileType, formatFileSize } from "@/api/firebase/storage";
+import { getUsers } from "@/api/firebase/firestore";
 
 // Dummy data
 const resourcesData = [
@@ -179,11 +188,18 @@ export default function Resources() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [selectedFileType, setSelectedFileType] = useState("all");
-  const [selectedResource, setSelectedResource] = useState<any>(null);
+  const [selectedResource, setSelectedResource] = useState<Resource | null>(null);
   const [viewDialogOpen, setViewDialogOpen] = useState(false);
   const [uploadDialogOpen, setUploadDialogOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [uploading, setUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
+
+  // Firebase data
+  const [resources, setResources] = useState<Resource[]>([]);
+  const [users, setUsers] = useState<any[]>([]);
 
   // Form state
   const [formTitle, setFormTitle] = useState("");
@@ -192,27 +208,51 @@ export default function Resources() {
   const [formTags, setFormTags] = useState("");
   const [formFile, setFormFile] = useState<File | null>(null);
 
+  // Subscribe to resources
+  useEffect(() => {
+    const unsubscribe = subscribeToResources(
+      (updatedResources) => {
+        setResources(updatedResources);
+        setLoading(false);
+      },
+      { category: selectedCategory !== "all" ? selectedCategory : undefined }
+    );
+
+    return () => unsubscribe();
+  }, [selectedCategory]);
+
+  // Load users
+  useEffect(() => {
+    const loadUsers = async () => {
+      try {
+        const allUsers = await getUsers({});
+        setUsers(allUsers);
+      } catch (error) {
+        console.error("Load users error:", error);
+      }
+    };
+    loadUsers();
+  }, []);
+
+  const getUserById = (userId: string) => {
+    return users.find((u) => u.uuid === userId);
+  };
+
   // Filter resources
-  const filteredResources = resourcesData.filter((resource) => {
+  const filteredResources = resources.filter((resource) => {
     const matchesSearch =
       resource.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
       resource.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
       resource.tags.some((tag) =>
         tag.toLowerCase().includes(searchQuery.toLowerCase())
       );
-    const matchesCategory =
-      selectedCategory === "all" || resource.category === selectedCategory;
     const matchesFileType =
       selectedFileType === "all" || resource.fileType === selectedFileType;
 
-    return matchesSearch && matchesCategory && matchesFileType;
+    return matchesSearch && matchesFileType;
   });
 
-  // Sort by date (newest first)
-  const sortedResources = [...filteredResources].sort(
-    (a, b) =>
-      new Date(b.uploadedAt).getTime() - new Date(a.uploadedAt).getTime()
-  );
+  const sortedResources = [...filteredResources];
 
   // Get file icon
   const getFileIcon = (fileType: string) => {
@@ -260,39 +300,80 @@ export default function Resources() {
   };
 
   // Handle view
-  const handleView = (resource: any) => {
+  const handleView = (resource: Resource) => {
     setSelectedResource(resource);
     setViewDialogOpen(true);
   };
 
   // Handle download
-  const handleDownload = (resource: any) => {
-    toast.success(`Downloading ${resource.fileName}`);
-    // In real app: trigger actual file download
-    // window.open(resource.downloadUrl, '_blank');
+  const handleDownload = async (resource: Resource) => {
+    try {
+      await incrementResourceDownloads(resource.id!);
+      window.open(resource.fileUrl, "_blank");
+      toast.success(`Downloading ${resource.fileName}`);
+    } catch (error: any) {
+      console.error("Download error:", error);
+      toast.error(error.message || "Failed to download file");
+    }
   };
 
   // Handle upload
-  const handleUpload = () => {
+  const handleUpload = async () => {
     if (!formTitle.trim() || !formDescription.trim() || !formFile) {
       toast.error("Please fill in all required fields and select a file");
       return;
     }
 
-    toast.success("Resource uploaded successfully");
-    setUploadDialogOpen(false);
-    resetForm();
-    // In real app: await api.uploadResource(formData)
+    setUploading(true);
+    setUploadProgress(0);
+    try {
+      const filePath = `resources/${Date.now()}_${formFile.name}`;
+      const fileUrl = await uploadFile(formFile, filePath, (progress) => {
+        setUploadProgress(progress.progress);
+      });
+
+      await createResource({
+        uuid: `res-${Date.now()}`,
+        title: formTitle,
+        description: formDescription,
+        fileName: formFile.name,
+        fileUrl,
+        fileSize: formFile.size,
+        fileType: getFileType(formFile.name) as any,
+        category: formCategory as any,
+        uploadedById: currentUser?.uuid || "",
+        tags: formTags.split(",").map((tag) => tag.trim()).filter(Boolean),
+      });
+
+      toast.success("Resource uploaded successfully");
+      setUploadDialogOpen(false);
+      resetForm();
+    } catch (error: any) {
+      console.error("Upload error:", error);
+      toast.error(error.message || "Failed to upload resource");
+    } finally {
+      setUploading(false);
+      setUploadProgress(0);
+    }
   };
 
-  // Handle edit
-  const handleEdit = (resource: any) => {
+  const handleDelete = async () => {
+    if (!selectedResource) return;
+
+    try {
+      await deleteResource(selectedResource.id!);
+      toast.success("Resource deleted successfully");
+      setDeleteDialogOpen(false);
+      setSelectedResource(null);
+    } catch (error: any) {
+      console.error("Delete error:", error);
+      toast.error(error.message || "Failed to delete resource");
+    }
+  };
+
+  const openDeleteDialog = (resource: Resource) => {
     setSelectedResource(resource);
-    setFormTitle(resource.title);
-    setFormDescription(resource.description);
-    setFormCategory(resource.category);
-    setFormTags(resource.tags.join(", "));
-    setEditDialogOpen(true);
+    setDeleteDialogOpen(true);
   };
 
   const handleUpdate = () => {
@@ -307,17 +388,8 @@ export default function Resources() {
     // In real app: await api.updateResource()
   };
 
-  // Handle delete
-  const handleDelete = (resource: any) => {
-    setSelectedResource(resource);
-    setDeleteDialogOpen(true);
-  };
-
-  const confirmDelete = () => {
-    toast.success("Resource deleted successfully");
-    setDeleteDialogOpen(false);
-    setSelectedResource(null);
-    // In real app: await api.deleteResource()
+  const confirmDelete = async () => {
+    await handleDelete();
   };
 
   // Reset form
@@ -494,14 +566,21 @@ export default function Resources() {
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
                           <DropdownMenuItem
-                            onClick={() => handleEdit(resource)}
+                            onClick={() => {
+                              setSelectedResource(resource);
+                              setFormTitle(resource.title);
+                              setFormDescription(resource.description);
+                              setFormCategory(resource.category);
+                              setFormTags(resource.tags.join(", "));
+                              setEditDialogOpen(true);
+                            }}
                           >
                             <Edit className="h-4 w-4 mr-2" />
                             Edit
                           </DropdownMenuItem>
                           <DropdownMenuSeparator />
                           <DropdownMenuItem
-                            onClick={() => handleDelete(resource)}
+                            onClick={() => openDeleteDialog(resource)}
                             className="text-destructive"
                           >
                             <Trash2 className="h-4 w-4 mr-2" />
@@ -534,7 +613,7 @@ export default function Resources() {
                     <div className="flex items-center gap-1">
                       <User className="h-3 w-3" />
                       <span className="truncate">
-                        {resource.uploadedBy.rank}
+                        {getUserById(resource.uploadedById)?.rank || "Unknown"}
                       </span>
                     </div>
                     <div className="flex items-center gap-1">
@@ -642,17 +721,17 @@ export default function Resources() {
                 <div className="flex items-center gap-3 py-3 border-t">
                   <Avatar>
                     <AvatarFallback className="bg-primary/20 text-primary text-xs font-semibold">
-                      {getInitials(selectedResource.uploadedBy.name)}
+                      {getInitials(getUserById(selectedResource.uploadedById)?.name || "Unknown")}
                     </AvatarFallback>
                   </Avatar>
                   <div>
                     <p className="text-sm font-medium">
-                      {selectedResource.uploadedBy.rank}{" "}
-                      {selectedResource.uploadedBy.name}
+                      {getUserById(selectedResource.uploadedById)?.rank || "Unknown"}{" "}
+                      {getUserById(selectedResource.uploadedById)?.name || "Unknown"}
                     </p>
                     <p className="text-xs text-muted-foreground">
                       Uploaded on{" "}
-                      {new Date(selectedResource.uploadedAt).toLocaleString()}
+                      {selectedResource.createdAt?.toLocaleString()}
                     </p>
                   </div>
                 </div>

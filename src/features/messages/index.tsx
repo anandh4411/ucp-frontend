@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   MessageSquare,
   Plus,
@@ -26,19 +26,25 @@ import {
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { SelectDropdown } from "@/components/select-dropdown";
-import messagesData from "@/data/messages.json";
-import usersData from "@/data/users.json";
 import { getCurrentUser } from "@/guards/useAuthGuard";
 import { toast } from "sonner";
+import { subscribeToConversations, subscribeToMessages } from "@/api/firebase/realtime";
+import { createConversation, sendMessage, type Conversation, type Message, getUsers } from "@/api/firebase/firestore";
+import { type UserProfile } from "@/api/firebase/auth";
 
 export function MessagesPage() {
   const currentUser = getCurrentUser();
-  const [selectedConversation, setSelectedConversation] = useState<
-    string | null
-  >(null);
+  const [selectedConversation, setSelectedConversation] = useState<string | null>(null);
   const [composeOpen, setComposeOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [messageText, setMessageText] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [sending, setSending] = useState(false);
+
+  // Firebase data
+  const [conversations, setConversations] = useState<Conversation[]>([]);
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [users, setUsers] = useState<UserProfile[]>([]);
 
   // Compose form state
   const [composeTo, setComposeTo] = useState("");
@@ -46,8 +52,44 @@ export function MessagesPage() {
   const [composeMessage, setComposeMessage] = useState("");
   const [composeImportant, setComposeImportant] = useState(false);
 
-  const conversations = messagesData.conversations;
-  const messageThreads = messagesData.messageThreads;
+  // Subscribe to conversations
+  useEffect(() => {
+    if (!currentUser?.uuid) return;
+
+    const unsubscribe = subscribeToConversations(currentUser.uuid, (updatedConversations) => {
+      setConversations(updatedConversations);
+      setLoading(false);
+    });
+
+    return () => unsubscribe();
+  }, [currentUser?.uuid]);
+
+  // Subscribe to messages when conversation is selected
+  useEffect(() => {
+    if (!selectedConversation) {
+      setMessages([]);
+      return;
+    }
+
+    const unsubscribe = subscribeToMessages(selectedConversation, (updatedMessages) => {
+      setMessages(updatedMessages);
+    });
+
+    return () => unsubscribe();
+  }, [selectedConversation]);
+
+  // Load users for compose dialog
+  useEffect(() => {
+    const loadUsers = async () => {
+      try {
+        const allUsers = await getUsers({ isActive: true });
+        setUsers(allUsers.filter((u) => u.uuid !== currentUser?.uuid));
+      } catch (error) {
+        console.error("Load users error:", error);
+      }
+    };
+    loadUsers();
+  }, [currentUser?.uuid]);
 
   // Filter conversations based on search
   const filteredConversations = conversations.filter((conv) =>
@@ -56,9 +98,11 @@ export function MessagesPage() {
 
   // Get selected conversation details
   const selectedConv = conversations.find((c) => c.id === selectedConversation);
-  const selectedThread = selectedConversation
-    ? messageThreads[selectedConversation as keyof typeof messageThreads]
-    : [];
+
+  // Get user by ID
+  const getUserById = (userId: string) => {
+    return users.find((u) => u.uuid === userId);
+  };
 
   // Get user initials for avatar
   const getInitials = (name: string) => {
@@ -71,37 +115,81 @@ export function MessagesPage() {
   };
 
   // Handle send message
-  const handleSendMessage = () => {
-    if (!messageText.trim()) return;
+  const handleSendMessage = async () => {
+    if (!messageText.trim() || !selectedConversation) return;
 
-    toast.success("Message sent successfully");
-    setMessageText("");
-    // In real app: await api.sendMessage()
+    setSending(true);
+    try {
+      await sendMessage(selectedConversation, {
+        uuid: `msg-${Date.now()}`,
+        conversationId: selectedConversation,
+        senderId: currentUser?.uuid || "",
+        content: messageText,
+        isRead: false,
+        readBy: [currentUser?.uuid || ""],
+      });
+      setMessageText("");
+      toast.success("Message sent successfully");
+    } catch (error: any) {
+      console.error("Send message error:", error);
+      toast.error(error.message || "Failed to send message");
+    } finally {
+      setSending(false);
+    }
   };
 
   // Handle compose new message
-  const handleComposeSubmit = () => {
+  const handleComposeSubmit = async () => {
     if (!composeTo || !composeSubject.trim() || !composeMessage.trim()) {
       toast.error("Please fill in all fields");
       return;
     }
 
-    toast.success("Message sent successfully");
-    setComposeOpen(false);
-    setComposeTo("");
-    setComposeSubject("");
-    setComposeMessage("");
-    setComposeImportant(false);
-    // In real app: await api.createMessage()
+    setSending(true);
+    try {
+      const conversationId = await createConversation({
+        uuid: `conv-${Date.now()}`,
+        participants: [currentUser?.uuid || "", composeTo],
+        subject: composeSubject,
+        lastMessage: {
+          content: composeMessage,
+          timestamp: new Date(),
+          senderId: currentUser?.uuid || "",
+        },
+        unreadCount: 1,
+        isImportant: composeImportant,
+        isUrgent: false,
+      });
+
+      await sendMessage(conversationId, {
+        uuid: `msg-${Date.now()}`,
+        conversationId,
+        senderId: currentUser?.uuid || "",
+        content: composeMessage,
+        isRead: false,
+        readBy: [currentUser?.uuid || ""],
+      });
+
+      toast.success("Message sent successfully");
+      setComposeOpen(false);
+      setComposeTo("");
+      setComposeSubject("");
+      setComposeMessage("");
+      setComposeImportant(false);
+      setSelectedConversation(conversationId);
+    } catch (error: any) {
+      console.error("Compose message error:", error);
+      toast.error(error.message || "Failed to send message");
+    } finally {
+      setSending(false);
+    }
   };
 
   // Users for compose dropdown (exclude current user)
-  const availableUsers = usersData
-    .filter((u) => u.id !== currentUser?.id && u.isActive)
-    .map((u) => ({
-      label: `${u.rank} ${u.name}`,
-      value: u.id,
-    }));
+  const availableUsers = users.map((u) => ({
+    label: `${u.rank} ${u.name}`,
+    value: u.uuid,
+  }));
 
   return (
     <div className="h-[calc(100vh-8rem)] flex flex-col space-y-4">
@@ -135,76 +223,68 @@ export function MessagesPage() {
 
           <ScrollArea className="flex-1">
             <div className="p-2 space-y-1">
-              {filteredConversations.map((conv) => {
-                const isSelected = selectedConversation === conv.id;
-                const otherParticipant = conv.participants.find(
-                  (p) => p.id !== currentUser?.id
-                );
+              {loading ? (
+                <div className="text-center py-8 text-muted-foreground">Loading conversations...</div>
+              ) : filteredConversations.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground">No conversations found</div>
+              ) : (
+                filteredConversations.map((conv) => {
+                  const isSelected = selectedConversation === conv.id;
+                  const otherParticipantId = conv.participants.find((p) => p !== currentUser?.uuid);
+                  const otherParticipant = getUserById(otherParticipantId || "");
 
-                return (
-                  <button
-                    key={conv.id}
-                    onClick={() => setSelectedConversation(conv.id)}
-                    className={`w-full text-left p-3 rounded-lg transition-colors ${
-                      isSelected
-                        ? "bg-primary/10 border border-primary/20"
-                        : "hover:bg-muted/50"
-                    }`}
-                  >
-                    <div className="flex items-start gap-3">
-                      <Avatar className="h-10 w-10">
-                        <AvatarFallback className="bg-primary/20 text-primary text-xs font-semibold">
-                          {getInitials(otherParticipant?.name || "UN")}
-                        </AvatarFallback>
-                      </Avatar>
+                  return (
+                    <button
+                      key={conv.id}
+                      onClick={() => setSelectedConversation(conv.id!)}
+                      className={`w-full text-left p-3 rounded-lg transition-colors ${
+                        isSelected ? "bg-primary/10 border border-primary/20" : "hover:bg-muted/50"
+                      }`}
+                    >
+                      <div className="flex items-start gap-3">
+                        <Avatar className="h-10 w-10">
+                          <AvatarFallback className="bg-primary/20 text-primary text-xs font-semibold">
+                            {getInitials(otherParticipant?.name || "Unknown")}
+                          </AvatarFallback>
+                        </Avatar>
 
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center justify-between mb-1">
-                          <span className="font-medium text-sm truncate">
-                            {otherParticipant?.rank} {otherParticipant?.name}
-                          </span>
-                          <span className="text-xs text-muted-foreground">
-                            {new Date(
-                              conv.lastMessage.timestamp
-                            ).toLocaleDateString()}
-                          </span>
-                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center justify-between mb-1">
+                            <span className="font-medium text-sm truncate">
+                              {otherParticipant?.rank} {otherParticipant?.name}
+                            </span>
+                            <span className="text-xs text-muted-foreground">
+                              {conv.lastMessage?.timestamp?.toLocaleDateString()}
+                            </span>
+                          </div>
 
-                        <div className="flex items-center gap-2 mb-1">
-                          <p
-                            className={`text-sm truncate flex-1 ${
-                              conv.isRead
-                                ? "text-muted-foreground"
-                                : "font-semibold text-foreground"
-                            }`}
-                          >
-                            {conv.subject}
+                          <div className="flex items-center gap-2 mb-1">
+                            <p className="text-sm truncate flex-1 font-semibold text-foreground">
+                              {conv.subject}
+                            </p>
+                            {conv.isUrgent && (
+                              <AlertCircle className="h-3 w-3 text-destructive flex-shrink-0" />
+                            )}
+                            {conv.isImportant && (
+                              <Star className="h-3 w-3 text-yellow-500 flex-shrink-0" />
+                            )}
+                          </div>
+
+                          <p className="text-xs text-muted-foreground truncate">
+                            {conv.lastMessage?.content}
                           </p>
-                          {conv.isUrgent && (
-                            <AlertCircle className="h-3 w-3 text-destructive flex-shrink-0" />
-                          )}
-                          {conv.isImportant && (
-                            <Star className="h-3 w-3 text-yellow-500 flex-shrink-0" />
+
+                          {conv.unreadCount > 0 && (
+                            <Badge variant="default" className="mt-2 text-xs h-5 px-2">
+                              {conv.unreadCount} new
+                            </Badge>
                           )}
                         </div>
-
-                        <p className="text-xs text-muted-foreground truncate">
-                          {conv.lastMessage.content}
-                        </p>
-
-                        {conv.unreadCount > 0 && (
-                          <Badge
-                            variant="default"
-                            className="mt-2 text-xs h-5 px-2"
-                          >
-                            {conv.unreadCount} new
-                          </Badge>
-                        )}
                       </div>
-                    </div>
-                  </button>
-                );
-              })}
+                    </button>
+                  );
+                })
+              )}
             </div>
           </ScrollArea>
         </Card>
@@ -217,37 +297,44 @@ export function MessagesPage() {
               <div className="p-4 border-b">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
-                    <Avatar className="h-10 w-10">
-                      <AvatarFallback className="bg-primary/20 text-primary text-xs font-semibold">
-                        {getInitials(
-                          selectedConv.participants.find(
-                            (p) => p.id !== currentUser?.id
-                          )?.name || "UN"
-                        )}
-                      </AvatarFallback>
-                    </Avatar>
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <h2 className="font-semibold">
-                          {selectedConv.subject}
-                        </h2>
-                        {selectedConv.isUrgent && (
-                          <Badge variant="destructive" className="text-xs">
-                            Urgent
-                          </Badge>
-                        )}
-                        {selectedConv.isImportant && (
-                          <Badge variant="default" className="text-xs">
-                            Important
-                          </Badge>
-                        )}
-                      </div>
-                      <p className="text-sm text-muted-foreground">
-                        {selectedConv.participants
-                          .map((p) => `${p.rank} ${p.name}`)
-                          .join(", ")}
-                      </p>
-                    </div>
+                    {(() => {
+                      const otherParticipantId = selectedConv.participants.find(
+                        (p) => p !== currentUser?.uuid
+                      );
+                      const otherParticipant = getUserById(otherParticipantId || "");
+                      return (
+                        <>
+                          <Avatar className="h-10 w-10">
+                            <AvatarFallback className="bg-primary/20 text-primary text-xs font-semibold">
+                              {getInitials(otherParticipant?.name || "Unknown")}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div>
+                            <div className="flex items-center gap-2">
+                              <h2 className="font-semibold">{selectedConv.subject}</h2>
+                              {selectedConv.isUrgent && (
+                                <Badge variant="destructive" className="text-xs">
+                                  Urgent
+                                </Badge>
+                              )}
+                              {selectedConv.isImportant && (
+                                <Badge variant="default" className="text-xs">
+                                  Important
+                                </Badge>
+                              )}
+                            </div>
+                            <p className="text-sm text-muted-foreground">
+                              {selectedConv.participants
+                                .map((p) => {
+                                  const user = getUserById(p);
+                                  return user ? `${user.rank} ${user.name}` : "Unknown";
+                                })
+                                .join(", ")}
+                            </p>
+                          </div>
+                        </>
+                      );
+                    })()}
                   </div>
                   <Button variant="ghost" size="icon">
                     <MoreVertical className="h-4 w-4" />
@@ -258,37 +345,30 @@ export function MessagesPage() {
               {/* Messages */}
               <ScrollArea className="flex-1 p-4">
                 <div className="space-y-4">
-                  {selectedThread.map((message) => {
-                    const isCurrentUser = message.senderId === currentUser?.id;
+                  {messages.map((message) => {
+                    const isCurrentUser = message.senderId === currentUser?.uuid;
+                    const sender = getUserById(message.senderId);
 
                     return (
                       <div
                         key={message.id}
-                        className={`flex ${
-                          isCurrentUser ? "justify-end" : "justify-start"
-                        }`}
+                        className={`flex ${isCurrentUser ? "justify-end" : "justify-start"}`}
                       >
-                        <div
-                          className={`max-w-[70%] ${
-                            isCurrentUser ? "order-2" : "order-1"
-                          }`}
-                        >
+                        <div className={`max-w-[70%] ${isCurrentUser ? "order-2" : "order-1"}`}>
                           {!isCurrentUser && (
                             <p className="text-xs font-medium mb-1">
-                              {message.senderRank} {message.senderName}
+                              {sender?.rank} {sender?.name}
                             </p>
                           )}
                           <div
                             className={`rounded-lg p-3 ${
-                              isCurrentUser
-                                ? "bg-primary text-primary-foreground"
-                                : "bg-muted"
+                              isCurrentUser ? "bg-primary text-primary-foreground" : "bg-muted"
                             }`}
                           >
                             <p className="text-sm">{message.content}</p>
                           </div>
                           <p className="text-xs text-muted-foreground mt-1">
-                            {new Date(message.timestamp).toLocaleString()}
+                            {message.timestamp?.toLocaleString()}
                           </p>
                         </div>
                       </div>
@@ -305,12 +385,13 @@ export function MessagesPage() {
                     className="min-h-[80px] resize-none"
                     value={messageText}
                     onChange={(e) => setMessageText(e.target.value)}
+                    disabled={sending}
                   />
                   <div className="flex flex-col gap-2">
-                    <Button variant="outline" size="icon">
+                    <Button variant="outline" size="icon" disabled>
                       <Paperclip className="h-4 w-4" />
                     </Button>
-                    <Button onClick={handleSendMessage}>
+                    <Button onClick={handleSendMessage} disabled={sending || !messageText.trim()}>
                       <Send className="h-4 w-4" />
                     </Button>
                   </div>
@@ -385,12 +466,12 @@ export function MessagesPage() {
           </div>
 
           <DialogFooter>
-            <Button variant="outline" onClick={() => setComposeOpen(false)}>
+            <Button variant="outline" onClick={() => setComposeOpen(false)} disabled={sending}>
               Cancel
             </Button>
-            <Button onClick={handleComposeSubmit}>
+            <Button onClick={handleComposeSubmit} disabled={sending}>
               <Send className="mr-2 h-4 w-4" />
-              Send Message
+              {sending ? "Sending..." : "Send Message"}
             </Button>
           </DialogFooter>
         </DialogContent>

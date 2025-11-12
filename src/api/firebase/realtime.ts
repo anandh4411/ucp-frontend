@@ -15,6 +15,7 @@ import type {
   Conversation,
   Message,
   CalendarEvent,
+  Resource,
 } from './firestore';
 
 // ============================================
@@ -362,6 +363,63 @@ export const showBrowserNotification = (
   }
 
   return null;
+};
+
+// ============================================
+// RESOURCES LISTENER
+// ============================================
+
+export type ResourcesCallback = (resources: Resource[]) => void;
+
+export const subscribeToResources = (
+  callback: ResourcesCallback,
+  filters?: {
+    category?: string;
+    searchTerm?: string;
+  }
+): Unsubscribe => {
+  try {
+    const constraints: QueryConstraint[] = [];
+
+    if (filters?.category) {
+      constraints.push(where('category', '==', filters.category));
+    }
+
+    constraints.push(orderBy('createdAt', 'desc'));
+
+    const q = query(collection(db, 'resources'), ...constraints);
+
+    return onSnapshot(
+      q,
+      (snapshot) => {
+        let resources = snapshot.docs.map((doc) => ({
+          id: doc.id,
+          ...doc.data(),
+          createdAt: doc.data().createdAt?.toDate(),
+          updatedAt: doc.data().updatedAt?.toDate(),
+        })) as Resource[];
+
+        // Client-side search filter
+        if (filters?.searchTerm) {
+          const searchLower = filters.searchTerm.toLowerCase();
+          resources = resources.filter(
+            (resource) =>
+              resource.title.toLowerCase().includes(searchLower) ||
+              resource.description.toLowerCase().includes(searchLower) ||
+              resource.tags.some((tag) => tag.toLowerCase().includes(searchLower))
+          );
+        }
+
+        callback(resources);
+      },
+      (error) => {
+        console.error('Resources listener error:', error);
+      }
+    );
+  } catch (error) {
+    console.error('Subscribe to resources error:', error);
+    return () => {};
+  }
 };
 
 // ============================================
