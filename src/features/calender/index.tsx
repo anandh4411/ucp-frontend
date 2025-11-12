@@ -1,195 +1,29 @@
 import { useState, useEffect } from "react";
-import {
-  Calendar as CalendarIcon,
-  Plus,
-  Search,
-  Clock,
-  MapPin,
-  Users,
-  Edit,
-  Trash2,
-  MoreVertical,
-  AlertCircle,
-  ChevronLeft,
-  ChevronRight,
-  Filter,
-} from "lucide-react";
+import { ChevronLeft, ChevronRight, Edit, Trash2, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Label } from "@/components/ui/label";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { getCurrentUser, hasRole } from "@/guards/useAuthGuard";
 import { toast } from "sonner";
 import { subscribeToEvents } from "@/api/firebase/realtime";
 import { createEvent, updateEvent, deleteEvent, type CalendarEvent } from "@/api/firebase/firestore";
 
-// Dummy data
-const eventsData = [
-  {
-    id: "1",
-    title: "Monthly Parade",
-    description:
-      "All personnel required to attend monthly parade in full ceremonial uniform.",
-    startTime: "2024-11-15T08:00:00Z",
-    endTime: "2024-11-15T10:00:00Z",
-    location: "Main Parade Ground",
-    category: "ceremony",
-    attendees: ["1", "2", "3"],
-    organizer: {
-      id: "1",
-      name: "Major Rajesh Kumar",
-      rank: "Major",
-    },
-    isMandatory: true,
-    isAllDay: false,
-  },
-  {
-    id: "2",
-    title: "Physical Training",
-    description: "Morning PT session - obstacle course training.",
-    startTime: "2024-11-10T06:00:00Z",
-    endTime: "2024-11-10T07:30:00Z",
-    location: "PT Ground",
-    category: "training",
-    attendees: ["2", "3"],
-    organizer: {
-      id: "2",
-      name: "Subedar Amit Singh",
-      rank: "Subedar",
-    },
-    isMandatory: true,
-    isAllDay: false,
-  },
-  {
-    id: "3",
-    title: "Weapons Training Workshop",
-    description: "Advanced weapons handling and maintenance training.",
-    startTime: "2024-11-12T09:00:00Z",
-    endTime: "2024-11-12T16:00:00Z",
-    location: "Training Hall A",
-    category: "training",
-    attendees: ["1", "3"],
-    organizer: {
-      id: "1",
-      name: "Major Rajesh Kumar",
-      rank: "Major",
-    },
-    isMandatory: false,
-    isAllDay: false,
-  },
-  {
-    id: "4",
-    title: "System Maintenance",
-    description: "Portal maintenance window - all services offline.",
-    startTime: "2024-11-10T02:00:00Z",
-    endTime: "2024-11-10T06:00:00Z",
-    location: "IT Center",
-    category: "maintenance",
-    attendees: ["2"],
-    organizer: {
-      id: "2",
-      name: "Subedar Amit Singh",
-      rank: "Subedar",
-    },
-    isMandatory: false,
-    isAllDay: false,
-  },
-  {
-    id: "5",
-    title: "Medical Inspection",
-    description: "Annual medical examination for all personnel.",
-    startTime: "2024-11-18T00:00:00Z",
-    endTime: "2024-11-18T23:59:59Z",
-    location: "Medical Center",
-    category: "administrative",
-    attendees: ["1", "2", "3"],
-    organizer: {
-      id: "1",
-      name: "Major Rajesh Kumar",
-      rank: "Major",
-    },
-    isMandatory: true,
-    isAllDay: true,
-  },
-  {
-    id: "6",
-    title: "Equipment Inspection",
-    description: "Quarterly equipment and gear inspection.",
-    startTime: "2024-11-20T10:00:00Z",
-    endTime: "2024-11-20T14:00:00Z",
-    location: "Armory",
-    category: "inspection",
-    attendees: ["1", "2", "3"],
-    organizer: {
-      id: "1",
-      name: "Major Rajesh Kumar",
-      rank: "Major",
-    },
-    isMandatory: true,
-    isAllDay: false,
-  },
-  {
-    id: "7",
-    title: "Leadership Meeting",
-    description: "Monthly leadership coordination meeting.",
-    startTime: "2024-11-22T14:00:00Z",
-    endTime: "2024-11-22T16:00:00Z",
-    location: "Conference Room",
-    category: "meeting",
-    attendees: ["1", "2"],
-    organizer: {
-      id: "1",
-      name: "Major Rajesh Kumar",
-      rank: "Major",
-    },
-    isMandatory: true,
-    isAllDay: false,
-  },
-];
-
 const categories = [
-  { label: "All", value: "all" },
-  { label: "Training", value: "training" },
-  { label: "Ceremony", value: "ceremony" },
-  { label: "Meeting", value: "meeting" },
-  { label: "Inspection", value: "inspection" },
-  { label: "Administrative", value: "administrative" },
-  { label: "Maintenance", value: "maintenance" },
+  { label: "Training", value: "training", color: "bg-purple-600" },
+  { label: "Ceremony", value: "ceremony", color: "bg-sky-400" },
+  { label: "Meeting", value: "meeting", color: "bg-emerald-600" },
+  { label: "Inspection", value: "inspection", color: "bg-yellow-500" },
+  { label: "Administrative", value: "administrative", color: "bg-blue-600" },
+  { label: "Maintenance", value: "maintenance", color: "bg-red-600" },
 ];
 
 const getCategoryColor = (category: string) => {
-  const colors: Record<string, string> = {
-    training:
-      "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200",
-    ceremony:
-      "bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200",
-    meeting: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200",
-    inspection:
-      "bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200",
-    administrative:
-      "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200",
-    maintenance: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200",
-  };
-  return colors[category] || colors.administrative;
+  const cat = categories.find((c) => c.value === category);
+  return cat?.color || "bg-gray-600";
 };
 
 export default function Calendar() {
@@ -197,26 +31,40 @@ export default function Calendar() {
   const canManage = hasRole(["adjt", "it_jco"]);
 
   const [currentDate, setCurrentDate] = useState(new Date());
-  const [view, setView] = useState<"month" | "list">("month");
-  const [searchQuery, setSearchQuery] = useState("");
-  const [selectedCategory, setSelectedCategory] = useState("all");
-  const [selectedEvent, setSelectedEvent] = useState<any>(null);
-  const [viewDialogOpen, setViewDialogOpen] = useState(false);
-  const [createDialogOpen, setCreateDialogOpen] = useState(false);
-  const [editDialogOpen, setEditDialogOpen] = useState(false);
-  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [view, setView] = useState<"day" | "week" | "month">("week");
+  const [events, setEvents] = useState<CalendarEvent[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null);
+  const [showEventDialog, setShowEventDialog] = useState(false);
+  const [showFormDialog, setShowFormDialog] = useState(false);
+  const [editingEvent, setEditingEvent] = useState<CalendarEvent | null>(null);
 
   // Form state
-  const [formTitle, setFormTitle] = useState("");
-  const [formDescription, setFormDescription] = useState("");
-  const [formStartDate, setFormStartDate] = useState("");
-  const [formStartTime, setFormStartTime] = useState("");
-  const [formEndDate, setFormEndDate] = useState("");
-  const [formEndTime, setFormEndTime] = useState("");
-  const [formLocation, setFormLocation] = useState("");
-  const [formCategory, setFormCategory] = useState("training");
-  const [formMandatory, setFormMandatory] = useState(false);
-  const [formAllDay, setFormAllDay] = useState(false);
+  const [formData, setFormData] = useState({
+    title: "",
+    description: "",
+    startDate: "",
+    startTime: "",
+    endDate: "",
+    endTime: "",
+    location: "",
+    category: "training",
+    isMandatory: false,
+    isAllDay: false,
+  });
+
+  // Subscribe to events
+  useEffect(() => {
+    const unsubscribe = subscribeToEvents(
+      (updatedEvents: CalendarEvent[]) => {
+        setEvents(updatedEvents);
+        setLoading(false);
+      },
+      {}
+    );
+
+    return () => unsubscribe();
+  }, []);
 
   // Calendar helpers
   const getDaysInMonth = (date: Date) => {
@@ -226,25 +74,15 @@ export default function Calendar() {
   };
 
   const getFirstDayOfMonth = (date: Date) => {
-    const year = date.getFullYear();
-    const month = date.getMonth();
-    return new Date(year, month, 1).getDay();
+    return new Date(date.getFullYear(), date.getMonth(), 1).getDay();
   };
 
   const goToPreviousMonth = () => {
-    setCurrentDate(
-      new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1)
-    );
+    setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1));
   };
 
   const goToNextMonth = () => {
-    setCurrentDate(
-      new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1)
-    );
-  };
-
-  const goToToday = () => {
-    setCurrentDate(new Date());
+    setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1));
   };
 
   const isToday = (day: number) => {
@@ -257,7 +95,7 @@ export default function Calendar() {
   };
 
   const getEventsForDay = (day: number) => {
-    return eventsData.filter((event) => {
+    return events.filter((event) => {
       const eventDate = new Date(event.startTime);
       return (
         eventDate.getDate() === day &&
@@ -267,765 +105,535 @@ export default function Calendar() {
     });
   };
 
-  // Filter events
-  const filteredEvents = eventsData.filter((event) => {
-    const matchesSearch =
-      event.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      event.description.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesCategory =
-      selectedCategory === "all" || event.category === selectedCategory;
-    return matchesSearch && matchesCategory;
-  });
-
-  // Sort events by date
-  const sortedEvents = [...filteredEvents].sort(
-    (a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime()
-  );
-
-  // Upcoming events (future only)
-  const upcomingEvents = sortedEvents.filter(
-    (event) => new Date(event.startTime) > new Date()
-  );
-
-  // Get initials
-  const getInitials = (name: string) => {
-    return name
-      .split(" ")
-      .map((n) => n[0])
-      .join("")
-      .toUpperCase()
-      .slice(0, 2);
+  const getPreviousMonthDays = () => {
+    const firstDay = getFirstDayOfMonth(currentDate);
+    const prevMonthDate = new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1);
+    const daysInPrevMonth = getDaysInMonth(prevMonthDate);
+    const days = [];
+    for (let i = firstDay - 1; i >= 0; i--) {
+      days.push(daysInPrevMonth - i);
+    }
+    return days;
   };
 
-  // Format time
-  const formatTime = (dateString: string) => {
-    return new Date(dateString).toLocaleTimeString("en-US", {
+  const getNextMonthDays = () => {
+    const daysInMonth = getDaysInMonth(currentDate);
+    const firstDay = getFirstDayOfMonth(currentDate);
+    const totalCells = Math.ceil((firstDay + daysInMonth) / 7) * 7;
+    const nextMonthDays = totalCells - (firstDay + daysInMonth);
+    const days = [];
+    for (let i = 1; i <= nextMonthDays; i++) {
+      days.push(i);
+    }
+    return days;
+  };
+
+  // Get upcoming events (future only, sorted by date)
+  const upcomingEvents = events
+    .filter((event) => new Date(event.startTime) > new Date())
+    .sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime())
+    .slice(0, 3);
+
+  // Format helpers
+  const formatTime = (date: Date) => {
+    return new Date(date).toLocaleTimeString("en-US", {
       hour: "2-digit",
       minute: "2-digit",
+      hour12: false,
     });
   };
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString("en-US", {
+  const formatDate = (date: Date) => {
+    return new Date(date).toLocaleDateString("en-US", {
       month: "short",
       day: "numeric",
       year: "numeric",
     });
   };
 
-  // Handle view event
-  const handleView = (event: any) => {
-    setSelectedEvent(event);
-    setViewDialogOpen(true);
+  // Handlers
+  const resetForm = () => {
+    setFormData({
+      title: "",
+      description: "",
+      startDate: "",
+      startTime: "",
+      endDate: "",
+      endTime: "",
+      location: "",
+      category: "training",
+      isMandatory: false,
+      isAllDay: false,
+    });
+    setEditingEvent(null);
   };
 
-  // Handle create
-  const handleCreate = () => {
-    if (
-      !formTitle.trim() ||
-      !formStartDate ||
-      !formEndDate ||
-      !formLocation.trim()
-    ) {
-      toast.error("Please fill in all required fields");
-      return;
-    }
-
-    toast.success("Event created successfully");
-    setCreateDialogOpen(false);
+  const openCreateDialog = () => {
     resetForm();
-    // In real app: await api.createEvent()
+    setShowFormDialog(true);
   };
 
-  // Handle edit
-  const handleEdit = (event: any) => {
-    setSelectedEvent(event);
-    setFormTitle(event.title);
-    setFormDescription(event.description);
+  const openEditDialog = (event: CalendarEvent) => {
     const startDate = new Date(event.startTime);
     const endDate = new Date(event.endTime);
-    setFormStartDate(startDate.toISOString().split("T")[0]);
-    setFormStartTime(startDate.toTimeString().slice(0, 5));
-    setFormEndDate(endDate.toISOString().split("T")[0]);
-    setFormEndTime(endDate.toTimeString().slice(0, 5));
-    setFormLocation(event.location);
-    setFormCategory(event.category);
-    setFormMandatory(event.isMandatory);
-    setFormAllDay(event.isAllDay);
-    setEditDialogOpen(true);
+    setFormData({
+      title: event.title,
+      description: event.description,
+      startDate: startDate.toISOString().split("T")[0],
+      startTime: startDate.toTimeString().slice(0, 5),
+      endDate: endDate.toISOString().split("T")[0],
+      endTime: endDate.toTimeString().slice(0, 5),
+      location: event.location,
+      category: event.category,
+      isMandatory: event.isMandatory,
+      isAllDay: event.isAllDay,
+    });
+    setEditingEvent(event);
+    setShowFormDialog(true);
   };
 
-  const handleUpdate = () => {
-    if (
-      !formTitle.trim() ||
-      !formStartDate ||
-      !formEndDate ||
-      !formLocation.trim()
-    ) {
+  const handleCreateOrUpdate = async () => {
+    if (!formData.title.trim() || !formData.startDate || !formData.endDate || !formData.location.trim()) {
       toast.error("Please fill in all required fields");
       return;
     }
 
-    toast.success("Event updated successfully");
-    setEditDialogOpen(false);
-    resetForm();
-    // In real app: await api.updateEvent()
+    try {
+      const startDateTime = formData.isAllDay
+        ? new Date(formData.startDate + "T00:00:00")
+        : new Date(formData.startDate + "T" + formData.startTime);
+
+      const endDateTime = formData.isAllDay
+        ? new Date(formData.endDate + "T23:59:59")
+        : new Date(formData.endDate + "T" + formData.endTime);
+
+      if (editingEvent) {
+        await updateEvent(editingEvent.id!, {
+          title: formData.title,
+          description: formData.description,
+          startTime: startDateTime,
+          endTime: endDateTime,
+          location: formData.location,
+          category: formData.category as any,
+          isMandatory: formData.isMandatory,
+          isAllDay: formData.isAllDay,
+        });
+        toast.success("Event updated successfully");
+      } else {
+        await createEvent({
+          uuid: `evt-${Date.now()}`,
+          title: formData.title,
+          description: formData.description,
+          startTime: startDateTime,
+          endTime: endDateTime,
+          location: formData.location,
+          category: formData.category as any,
+          organizerId: currentUser?.uuid || "",
+          attendeeIds: [],
+          isMandatory: formData.isMandatory,
+          isAllDay: formData.isAllDay,
+          reminderBefore: 30,
+        });
+        toast.success("Event created successfully");
+      }
+      setShowFormDialog(false);
+      resetForm();
+    } catch (error: any) {
+      console.error("Save error:", error);
+      toast.error(error.message || "Failed to save event");
+    }
   };
 
-  // Handle delete
-  const handleDelete = (event: any) => {
+  const handleDelete = async (event: CalendarEvent) => {
+    if (!window.confirm("Are you sure you want to delete this event?")) return;
+
+    try {
+      await deleteEvent(event.id!);
+      toast.success("Event deleted successfully");
+      setShowEventDialog(false);
+    } catch (error: any) {
+      console.error("Delete error:", error);
+      toast.error(error.message || "Failed to delete event");
+    }
+  };
+
+  const openEventDialog = (event: CalendarEvent) => {
     setSelectedEvent(event);
-    setDeleteDialogOpen(true);
+    setShowEventDialog(true);
   };
 
-  const confirmDelete = () => {
-    toast.success("Event deleted successfully");
-    setDeleteDialogOpen(false);
-    setSelectedEvent(null);
-    // In real app: await api.deleteEvent()
-  };
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-96">
+        <div className="text-muted-foreground">Loading calendar...</div>
+      </div>
+    );
+  }
 
-  // Reset form
-  const resetForm = () => {
-    setFormTitle("");
-    setFormDescription("");
-    setFormStartDate("");
-    setFormStartTime("");
-    setFormEndDate("");
-    setFormEndTime("");
-    setFormLocation("");
-    setFormCategory("training");
-    setFormMandatory(false);
-    setFormAllDay(false);
-    setSelectedEvent(null);
-  };
-
-  // Render calendar grid
-  const renderCalendar = () => {
-    const daysInMonth = getDaysInMonth(currentDate);
-    const firstDay = getFirstDayOfMonth(currentDate);
-    const days = [];
-
-    // Empty cells for days before the first day of month
-    for (let i = 0; i < firstDay; i++) {
-      days.push(<div key={`empty-${i}`} className="p-2" />);
-    }
-
-    // Days of the month
-    for (let day = 1; day <= daysInMonth; day++) {
-      const dayEvents = getEventsForDay(day);
-      const isTodayDate = isToday(day);
-
-      days.push(
-        <div
-          key={day}
-          className={`min-h-24 p-2 border rounded-lg transition-colors ${
-            isTodayDate
-              ? "bg-primary/5 border-primary"
-              : "hover:bg-muted/50 border-border"
-          }`}
-        >
-          <div
-            className={`text-sm font-semibold mb-1 ${
-              isTodayDate ? "text-primary" : ""
-            }`}
-          >
-            {day}
-          </div>
-          <div className="space-y-1">
-            {dayEvents.slice(0, 2).map((event) => (
-              <button
-                key={event.id}
-                onClick={() => handleView(event)}
-                className={`w-full text-left text-xs p-1 rounded truncate ${getCategoryColor(
-                  event.category
-                )}`}
-              >
-                {formatTime(event.startTime)} {event.title}
-              </button>
-            ))}
-            {dayEvents.length > 2 && (
-              <div className="text-xs text-muted-foreground pl-1">
-                +{dayEvents.length - 2} more
-              </div>
-            )}
-          </div>
-        </div>
-      );
-    }
-
-    return days;
-  };
+  const daysInMonth = getDaysInMonth(currentDate);
+  const prevMonthDays = getPreviousMonthDays();
+  const nextMonthDays = getNextMonthDays();
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Calendar</h1>
-          <p className="text-muted-foreground">Unit events and schedules</p>
-        </div>
-        {canManage && (
-          <Button onClick={() => setCreateDialogOpen(true)}>
-            <Plus className="mr-2 h-4 w-4" />
-            Create Event
-          </Button>
-        )}
-      </div>
+    <div className="relative bg-stone-50 min-h-screen">
+      {/* Background decorations */}
+      <div className="bg-sky-400 w-40 h-40 rounded-full absolute top-1 right-0 opacity-20 z-0 blur-3xl" />
+      <div className="bg-emerald-500 w-40 h-24 absolute top-0 left-0 opacity-20 z-0 blur-3xl" />
+      <div className="bg-purple-600 w-40 h-24 absolute top-40 left-0 opacity-20 z-0 blur-3xl" />
 
-      {/* Tabs */}
-      <Tabs value={view} onValueChange={(v) => setView(v as "month" | "list")}>
-        <TabsList>
-          <TabsTrigger value="month">Month View</TabsTrigger>
-          <TabsTrigger value="list">List View</TabsTrigger>
-        </TabsList>
-
-        {/* Month View */}
-        <TabsContent value="month" className="space-y-4">
-          {/* Calendar Controls */}
-          <Card>
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-4">
-                  <Button
-                    variant="outline"
-                    size="icon"
-                    onClick={goToPreviousMonth}
-                  >
-                    <ChevronLeft className="h-4 w-4" />
-                  </Button>
-                  <h2 className="text-xl font-semibold">
-                    {currentDate.toLocaleDateString("en-US", {
-                      month: "long",
-                      year: "numeric",
-                    })}
-                  </h2>
-                  <Button variant="outline" size="icon" onClick={goToNextMonth}>
-                    <ChevronRight className="h-4 w-4" />
-                  </Button>
+      <div className="w-full py-12 relative z-10">
+        <div className="w-full max-w-7xl mx-auto px-4 lg:px-8">
+          <div className="grid grid-cols-12 gap-8 max-w-4xl mx-auto xl:max-w-full">
+            {/* Upcoming Events Section */}
+            <div className="col-span-12 xl:col-span-5">
+              <div className="flex items-center justify-between mb-6">
+                <div>
+                  <h2 className="font-semibold text-3xl leading-tight text-gray-900 mb-1.5">Upcoming Events</h2>
+                  <p className="text-lg font-normal text-gray-600">Don't miss schedule</p>
                 </div>
-                <Button variant="outline" onClick={goToToday}>
-                  Today
-                </Button>
-              </div>
-            </CardHeader>
-            <CardContent>
-              {/* Day Headers */}
-              <div className="grid grid-cols-7 gap-2 mb-2">
-                {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map(
-                  (day) => (
-                    <div
-                      key={day}
-                      className="text-center text-sm font-semibold text-muted-foreground"
-                    >
-                      {day}
-                    </div>
-                  )
+                {canManage && (
+                  <Button onClick={openCreateDialog} size="sm">
+                    <Plus className="h-4 w-4" />
+                  </Button>
                 )}
               </div>
 
-              {/* Calendar Grid */}
-              <div className="grid grid-cols-7 gap-2">{renderCalendar()}</div>
-            </CardContent>
-          </Card>
-
-          {/* Upcoming Events Sidebar */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">Upcoming Events</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {upcomingEvents.length === 0 ? (
-                <p className="text-sm text-muted-foreground text-center py-4">
-                  No upcoming events
-                </p>
-              ) : (
-                <div className="space-y-2">
-                  {upcomingEvents.slice(0, 5).map((event) => (
-                    <button
-                      key={event.id}
-                      onClick={() => handleView(event)}
-                      className="w-full text-left p-3 rounded-lg border hover:bg-muted/50 transition-colors"
-                    >
-                      <div className="flex items-start justify-between gap-2">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2 mb-1">
-                            <p className="font-medium text-sm">{event.title}</p>
-                            {event.isMandatory && (
-                              <Badge variant="destructive" className="text-xs">
-                                Mandatory
-                              </Badge>
-                            )}
-                          </div>
-                          <div className="flex items-center gap-3 text-xs text-muted-foreground">
-                            <div className="flex items-center gap-1">
-                              <Clock className="h-3 w-3" />
-                              {formatDate(event.startTime)} •{" "}
-                              {formatTime(event.startTime)}
-                            </div>
-                            <div className="flex items-center gap-1">
-                              <MapPin className="h-3 w-3" />
-                              {event.location}
-                            </div>
-                          </div>
+              <div className="flex gap-5 flex-col">
+                {upcomingEvents.length === 0 ? (
+                  <div className="p-6 rounded-xl bg-white text-center text-gray-500">No upcoming events</div>
+                ) : (
+                  upcomingEvents.map((event) => (
+                    <div key={event.id} className="p-6 rounded-xl bg-white shadow-sm hover:shadow-md transition-shadow">
+                      <div className="flex items-center justify-between mb-3">
+                        <div className="flex items-center gap-2.5">
+                          <span className={`w-2.5 h-2.5 rounded-full ${getCategoryColor(event.category)}`} />
+                          <p className="text-base font-medium text-gray-900">
+                            {formatDate(event.startTime)} - {formatTime(event.startTime)} - {formatTime(event.endTime)}
+                          </p>
                         </div>
-                        <Badge className={getCategoryColor(event.category)}>
-                          {event.category}
-                        </Badge>
-                      </div>
-                    </button>
-                  ))}
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        {/* List View */}
-        <TabsContent value="list" className="space-y-4">
-          {/* Filters */}
-          <div className="flex flex-col sm:flex-row gap-4">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Search events..."
-                className="pl-9"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-              />
-            </div>
-
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="outline" className="gap-2">
-                  <Filter className="h-4 w-4" />
-                  Category
-                  {selectedCategory !== "all" && (
-                    <Badge variant="secondary" className="ml-1">
-                      1
-                    </Badge>
-                  )}
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                {categories.map((cat) => (
-                  <DropdownMenuItem
-                    key={cat.value}
-                    onClick={() => setSelectedCategory(cat.value)}
-                    className={
-                      selectedCategory === cat.value ? "bg-accent" : ""
-                    }
-                  >
-                    {cat.label}
-                  </DropdownMenuItem>
-                ))}
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
-
-          {/* Events List */}
-          {sortedEvents.length === 0 ? (
-            <Card>
-              <CardContent className="flex flex-col items-center justify-center py-12">
-                <CalendarIcon className="h-12 w-12 text-muted-foreground mb-4" />
-                <p className="text-muted-foreground">No events found</p>
-              </CardContent>
-            </Card>
-          ) : (
-            <div className="space-y-3">
-              {sortedEvents.map((event) => (
-                <Card key={event.id} className="transition-all hover:shadow-md">
-                  <CardContent className="p-4">
-                    <div className="flex items-start justify-between gap-4">
-                      <div className="flex items-start gap-4 flex-1">
-                        <div className="bg-primary/10 p-3 rounded-lg text-center min-w-16">
-                          <div className="text-xs text-muted-foreground">
-                            {new Date(event.startTime).toLocaleDateString(
-                              "en-US",
-                              { month: "short" }
-                            )}
-                          </div>
-                          <div className="text-2xl font-bold">
-                            {new Date(event.startTime).getDate()}
-                          </div>
-                        </div>
-
-                        <div className="flex-1 space-y-2">
-                          <div>
-                            <div className="flex items-center gap-2 mb-1">
-                              <h3 className="font-semibold">{event.title}</h3>
-                              {event.isMandatory && (
-                                <Badge
-                                  variant="destructive"
-                                  className="text-xs"
-                                >
-                                  Mandatory
-                                </Badge>
-                              )}
-                              <Badge
-                                className={getCategoryColor(event.category)}
-                              >
-                                {event.category}
-                              </Badge>
-                            </div>
-                            <p className="text-sm text-muted-foreground">
-                              {event.description}
-                            </p>
-                          </div>
-
-                          <div className="flex flex-wrap items-center gap-4 text-xs text-muted-foreground">
-                            <div className="flex items-center gap-1">
-                              <Clock className="h-3 w-3" />
-                              {event.isAllDay
-                                ? "All Day"
-                                : `${formatTime(
-                                    event.startTime
-                                  )} - ${formatTime(event.endTime)}`}
-                            </div>
-                            <div className="flex items-center gap-1">
-                              <MapPin className="h-3 w-3" />
-                              {event.location}
-                            </div>
-                            <div className="flex items-center gap-1">
-                              <Users className="h-3 w-3" />
-                              {event.attendees.length} attending
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Actions */}
-                      <div className="flex items-center gap-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleView(event)}
-                        >
-                          View
-                        </Button>
-
                         {canManage && (
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" size="icon">
-                                <MoreVertical className="h-4 w-4" />
-                              </Button>
+                              <button className="inline-flex justify-center py-2.5 px-1 items-center gap-2 text-sm text-black rounded-full cursor-pointer font-semibold text-center transition-all duration-500 hover:text-purple-600">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="4" viewBox="0 0 12 4" fill="none">
+                                  <path d="M1.85624 2.00085H1.81458M6.0343 2.00085H5.99263M10.2124 2.00085H10.1707" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
+                                </svg>
+                              </button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
-                              <DropdownMenuItem
-                                onClick={() => handleEdit(event)}
-                              >
-                                <Edit className="h-4 w-4 mr-2" />
+                              <DropdownMenuItem onClick={() => openEditDialog(event)}>
+                                <Edit className="mr-2 h-4 w-4" />
                                 Edit
                               </DropdownMenuItem>
-                              <DropdownMenuSeparator />
-                              <DropdownMenuItem
-                                onClick={() => handleDelete(event)}
-                                className="text-destructive"
-                              >
-                                <Trash2 className="h-4 w-4 mr-2" />
-                                Delete
+                              <DropdownMenuItem onClick={() => handleDelete(event)} className="text-destructive">
+                                <Trash2 className="mr-2 h-4 w-4" />
+                                Remove
                               </DropdownMenuItem>
                             </DropdownMenuContent>
                           </DropdownMenu>
                         )}
                       </div>
+                      <h6 className="text-xl leading-8 font-semibold text-black mb-1">{event.title}</h6>
+                      <p className="text-base font-normal text-gray-600 line-clamp-2">{event.description}</p>
+                      <p className="text-sm font-normal text-gray-500 mt-2">{event.location}</p>
                     </div>
-                  </CardContent>
-                </Card>
-              ))}
+                  ))
+                )}
+              </div>
             </div>
-          )}
-        </TabsContent>
-      </Tabs>
 
-      {/* View Dialog */}
-      <Dialog open={viewDialogOpen} onOpenChange={setViewDialogOpen}>
-        <DialogContent className="sm:max-w-2xl">
-          {selectedEvent && (
-            <>
-              <DialogHeader>
-                <DialogTitle className="flex items-center gap-2">
-                  <CalendarIcon className="h-5 w-5" />
-                  {selectedEvent.title}
-                </DialogTitle>
-                <DialogDescription>
-                  <div className="flex flex-wrap items-center gap-2 mt-2">
-                    <Badge className={getCategoryColor(selectedEvent.category)}>
-                      {selectedEvent.category}
-                    </Badge>
-                    {selectedEvent.isMandatory && (
-                      <Badge variant="destructive">Mandatory</Badge>
-                    )}
-                    {selectedEvent.isAllDay && (
-                      <Badge variant="secondary">All Day</Badge>
-                    )}
-                  </div>
-                </DialogDescription>
-              </DialogHeader>
-
-              <div className="space-y-4">
-                <div>
-                  <p className="text-sm">{selectedEvent.description}</p>
-                </div>
-
-                <div className="grid grid-cols-2 gap-4 text-sm">
-                  <div className="space-y-3">
-                    <div className="flex items-start gap-2">
-                      <Clock className="h-4 w-4 text-muted-foreground mt-0.5" />
-                      <div>
-                        <p className="font-medium">Start</p>
-                        <p className="text-muted-foreground">
-                          {formatDate(selectedEvent.startTime)}
-                          {!selectedEvent.isAllDay &&
-                            ` • ${formatTime(selectedEvent.startTime)}`}
-                        </p>
-                      </div>
-                    </div>
-
-                    <div className="flex items-start gap-2">
-                      <Clock className="h-4 w-4 text-muted-foreground mt-0.5" />
-                      <div>
-                        <p className="font-medium">End</p>
-                        <p className="text-muted-foreground">
-                          {formatDate(selectedEvent.endTime)}
-                          {!selectedEvent.isAllDay &&
-                            ` • ${formatTime(selectedEvent.endTime)}`}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="space-y-3">
-                    <div className="flex items-start gap-2">
-                      <MapPin className="h-4 w-4 text-muted-foreground mt-0.5" />
-                      <div>
-                        <p className="font-medium">Location</p>
-                        <p className="text-muted-foreground">
-                          {selectedEvent.location}
-                        </p>
-                      </div>
-                    </div>
-
-                    <div className="flex items-start gap-2">
-                      <Users className="h-4 w-4 text-muted-foreground mt-0.5" />
-                      <div>
-                        <p className="font-medium">Attendees</p>
-                        <p className="text-muted-foreground">
-                          {selectedEvent.attendees.length} personnel
-                        </p>
-                      </div>
-                    </div>
+            {/* Calendar Section */}
+            <div className="col-span-12 xl:col-span-7 px-2.5 py-5 sm:p-8 bg-gradient-to-b from-white/25 to-white xl:bg-white rounded-2xl max-xl:row-start-1">
+              <div className="flex flex-col md:flex-row gap-4 items-center justify-between mb-5">
+                <div className="flex items-center gap-4">
+                  <h5 className="text-xl leading-8 font-semibold text-gray-900">
+                    {currentDate.toLocaleDateString("en-US", { month: "long", year: "numeric" })}
+                  </h5>
+                  <div className="flex items-center">
+                    <button
+                      onClick={goToPreviousMonth}
+                      className="text-indigo-600 p-1 rounded transition-all duration-300 hover:text-white hover:bg-indigo-600"
+                    >
+                      <ChevronLeft className="h-4 w-4" />
+                    </button>
+                    <button
+                      onClick={goToNextMonth}
+                      className="text-indigo-600 p-1 rounded transition-all duration-300 hover:text-white hover:bg-indigo-600"
+                    >
+                      <ChevronRight className="h-4 w-4" />
+                    </button>
                   </div>
                 </div>
-
-                <div className="flex items-center gap-3 py-3 border-t">
-                  <Avatar>
-                    <AvatarFallback className="bg-primary/20 text-primary text-xs font-semibold">
-                      {getInitials(selectedEvent.organizer.name)}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div>
-                    <p className="text-sm font-medium">
-                      Organized by {selectedEvent.organizer.rank}{" "}
-                      {selectedEvent.organizer.name}
-                    </p>
-                  </div>
+                <div className="flex items-center rounded-md p-1 bg-indigo-50 gap-px">
+                  <button
+                    onClick={() => setView("day")}
+                    className={`py-2.5 px-5 rounded-lg text-sm font-medium transition-all duration-300 ${
+                      view === "day" ? "bg-indigo-600 text-white" : "bg-indigo-50 text-indigo-600 hover:bg-indigo-600 hover:text-white"
+                    }`}
+                  >
+                    Day
+                  </button>
+                  <button
+                    onClick={() => setView("week")}
+                    className={`py-2.5 px-5 rounded-lg text-sm font-medium transition-all duration-300 ${
+                      view === "week" ? "bg-indigo-600 text-white" : "bg-indigo-50 text-indigo-600 hover:bg-indigo-600 hover:text-white"
+                    }`}
+                  >
+                    Week
+                  </button>
+                  <button
+                    onClick={() => setView("month")}
+                    className={`py-2.5 px-5 rounded-lg text-sm font-medium transition-all duration-300 ${
+                      view === "month" ? "bg-indigo-600 text-white" : "bg-indigo-50 text-indigo-600 hover:bg-indigo-600 hover:text-white"
+                    }`}
+                  >
+                    Month
+                  </button>
                 </div>
               </div>
 
-              <DialogFooter>
-                <Button
-                  variant="outline"
-                  onClick={() => setViewDialogOpen(false)}
-                >
-                  Close
-                </Button>
-              </DialogFooter>
-            </>
+              <div className="border border-indigo-200 rounded-xl overflow-hidden">
+                {/* Day Headers */}
+                <div className="grid grid-cols-7 rounded-t-3xl border-b border-indigo-200">
+                  {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((day, i) => (
+                    <div
+                      key={day}
+                      className={`py-3.5 bg-indigo-50 flex items-center justify-center text-sm font-medium text-indigo-600 ${
+                        i === 0 ? "rounded-tl-xl border-r" : i === 6 ? "rounded-tr-xl" : "border-r"
+                      } border-indigo-200`}
+                    >
+                      {day}
+                    </div>
+                  ))}
+                </div>
+
+                {/* Calendar Grid */}
+                <div className="grid grid-cols-7">
+                  {/* Previous month days */}
+                  {prevMonthDays.map((day, i) => (
+                    <div
+                      key={`prev-${i}`}
+                      className={`flex xl:aspect-square max-xl:min-h-[60px] p-3.5 bg-gray-50 border-indigo-200 transition-all duration-300 hover:bg-indigo-50 ${
+                        i < 6 ? "border-r" : ""
+                      } border-b`}
+                    >
+                      <span className="text-xs font-semibold text-gray-400">{day}</span>
+                    </div>
+                  ))}
+
+                  {/* Current month days */}
+                  {Array.from({ length: daysInMonth }, (_, i) => i + 1).map((day) => {
+                    const dayEvents = getEventsForDay(day);
+                    const isTodayDate = isToday(day);
+                    const dayOfWeek = new Date(currentDate.getFullYear(), currentDate.getMonth(), day).getDay();
+
+                    return (
+                      <div
+                        key={day}
+                        className={`flex xl:aspect-square max-xl:min-h-[60px] p-3.5 relative bg-white border-indigo-200 transition-all duration-300 hover:bg-indigo-50 cursor-pointer ${
+                          dayOfWeek !== 6 ? "border-r" : ""
+                        } border-b`}
+                      >
+                        <span
+                          className={`text-xs font-semibold ${
+                            isTodayDate
+                              ? "text-white w-6 h-6 rounded-full flex items-center justify-center bg-indigo-600"
+                              : "text-gray-900"
+                          }`}
+                        >
+                          {day}
+                        </span>
+                        {dayEvents.length > 0 && (
+                          <div
+                            className="absolute top-9 bottom-1 left-3.5 p-1.5 xl:px-2.5 h-max rounded"
+                            style={{ backgroundColor: getCategoryColor(dayEvents[0].category) + "20" }}
+                            onClick={() => openEventDialog(dayEvents[0])}
+                          >
+                            <p
+                              className="hidden xl:block text-xs font-medium mb-px whitespace-nowrap overflow-hidden text-ellipsis"
+                              style={{ color: getCategoryColor(dayEvents[0].category).replace("bg-", "#") }}
+                            >
+                              {dayEvents[0].title}
+                            </p>
+                            <span
+                              className="hidden xl:block text-xs font-normal whitespace-nowrap"
+                              style={{ color: getCategoryColor(dayEvents[0].category).replace("bg-", "#") }}
+                            >
+                              {formatTime(dayEvents[0].startTime)} - {formatTime(dayEvents[0].endTime)}
+                            </span>
+                            <p className={`xl:hidden w-2 h-2 rounded-full ${getCategoryColor(dayEvents[0].category)}`} />
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+
+                  {/* Next month days */}
+                  {nextMonthDays.map((day, i) => (
+                    <div
+                      key={`next-${i}`}
+                      className={`flex xl:aspect-square max-xl:min-h-[60px] p-3.5 bg-gray-50 border-indigo-200 transition-all duration-300 hover:bg-indigo-50 ${
+                        i === 0 ? "rounded-bl-xl" : ""
+                      } ${i === nextMonthDays.length - 1 ? "rounded-br-xl" : ""} ${i < nextMonthDays.length - 1 ? "border-r" : ""}`}
+                    >
+                      <span className="text-xs font-semibold text-gray-400">{day}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Event Detail Dialog */}
+      <Dialog open={showEventDialog} onOpenChange={setShowEventDialog}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>{selectedEvent?.title}</DialogTitle>
+          </DialogHeader>
+          {selectedEvent && (
+            <div className="space-y-4">
+              <div className="flex gap-2">
+                <Badge className={getCategoryColor(selectedEvent.category)}>{selectedEvent.category}</Badge>
+                {selectedEvent.isMandatory && <Badge variant="destructive">Mandatory</Badge>}
+                {selectedEvent.isAllDay && <Badge variant="secondary">All Day</Badge>}
+              </div>
+              <p className="text-sm">{selectedEvent.description}</p>
+              <div className="grid grid-cols-2 gap-4 text-sm">
+                <div>
+                  <p className="font-medium">Start</p>
+                  <p className="text-muted-foreground">
+                    {formatDate(selectedEvent.startTime)}
+                    {!selectedEvent.isAllDay && ` • ${formatTime(selectedEvent.startTime)}`}
+                  </p>
+                </div>
+                <div>
+                  <p className="font-medium">End</p>
+                  <p className="text-muted-foreground">
+                    {formatDate(selectedEvent.endTime)}
+                    {!selectedEvent.isAllDay && ` • ${formatTime(selectedEvent.endTime)}`}
+                  </p>
+                </div>
+                <div>
+                  <p className="font-medium">Location</p>
+                  <p className="text-muted-foreground">{selectedEvent.location}</p>
+                </div>
+              </div>
+            </div>
           )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowEventDialog(false)}>
+              Close
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
 
-      {/* Create/Edit Dialog */}
-      <Dialog
-        open={createDialogOpen || editDialogOpen}
-        onOpenChange={(open) => {
-          if (!open) {
-            setCreateDialogOpen(false);
-            setEditDialogOpen(false);
-            resetForm();
-          }
-        }}
-      >
-        <DialogContent className="sm:max-w-2xl">
+      {/* Create/Edit Form Dialog */}
+      <Dialog open={showFormDialog} onOpenChange={setShowFormDialog}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>
-              {editDialogOpen ? "Edit Event" : "Create Event"}
-            </DialogTitle>
-            <DialogDescription>
-              {editDialogOpen
-                ? "Update event details"
-                : "Schedule a new unit event"}
-            </DialogDescription>
+            <DialogTitle>{editingEvent ? "Edit Event" : "Create Event"}</DialogTitle>
           </DialogHeader>
-
-          <div className="space-y-4 max-h-[60vh] overflow-y-auto pr-2">
+          <div className="space-y-4">
             <div className="space-y-2">
               <Label>Title *</Label>
-              <Input
-                placeholder="Event title"
-                value={formTitle}
-                onChange={(e) => setFormTitle(e.target.value)}
-              />
+              <Input value={formData.title} onChange={(e) => setFormData({ ...formData, title: e.target.value })} placeholder="Event title" />
             </div>
-
             <div className="space-y-2">
               <Label>Description</Label>
               <Textarea
-                placeholder="Event description..."
-                className="min-h-[80px] resize-none"
-                value={formDescription}
-                onChange={(e) => setFormDescription(e.target.value)}
+                value={formData.description}
+                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                placeholder="Event description"
+                rows={4}
               />
             </div>
-
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>Start Date *</Label>
-                <Input
-                  type="date"
-                  value={formStartDate}
-                  onChange={(e) => setFormStartDate(e.target.value)}
-                />
+                <Input type="date" value={formData.startDate} onChange={(e) => setFormData({ ...formData, startDate: e.target.value })} />
               </div>
               <div className="space-y-2">
                 <Label>Start Time</Label>
                 <Input
                   type="time"
-                  value={formStartTime}
-                  onChange={(e) => setFormStartTime(e.target.value)}
-                  disabled={formAllDay}
+                  value={formData.startTime}
+                  onChange={(e) => setFormData({ ...formData, startTime: e.target.value })}
+                  disabled={formData.isAllDay}
                 />
               </div>
             </div>
-
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>End Date *</Label>
-                <Input
-                  type="date"
-                  value={formEndDate}
-                  onChange={(e) => setFormEndDate(e.target.value)}
-                />
+                <Input type="date" value={formData.endDate} onChange={(e) => setFormData({ ...formData, endDate: e.target.value })} />
               </div>
               <div className="space-y-2">
                 <Label>End Time</Label>
                 <Input
                   type="time"
-                  value={formEndTime}
-                  onChange={(e) => setFormEndTime(e.target.value)}
-                  disabled={formAllDay}
+                  value={formData.endTime}
+                  onChange={(e) => setFormData({ ...formData, endTime: e.target.value })}
+                  disabled={formData.isAllDay}
                 />
               </div>
             </div>
-
             <div className="space-y-2">
               <Label>Location *</Label>
-              <Input
-                placeholder="Event location"
-                value={formLocation}
-                onChange={(e) => setFormLocation(e.target.value)}
-              />
+              <Input value={formData.location} onChange={(e) => setFormData({ ...formData, location: e.target.value })} placeholder="Event location" />
             </div>
-
             <div className="space-y-2">
               <Label>Category</Label>
               <select
-                className="w-full h-9 rounded-md border border-input bg-background px-3 py-1 text-sm"
-                value={formCategory}
-                onChange={(e) => setFormCategory(e.target.value)}
+                className="w-full h-10 rounded-md border border-input bg-background px-3 text-sm"
+                value={formData.category}
+                onChange={(e) => setFormData({ ...formData, category: e.target.value })}
               >
-                {categories.slice(1).map((cat) => (
+                {categories.map((cat) => (
                   <option key={cat.value} value={cat.value}>
                     {cat.label}
                   </option>
                 ))}
               </select>
             </div>
-
-            <div className="flex items-center justify-between rounded-lg border p-3">
-              <div className="space-y-0.5">
-                <Label>All Day Event</Label>
-                <p className="text-xs text-muted-foreground">
-                  Event lasts the entire day
-                </p>
-              </div>
+            <div className="flex items-center gap-2">
               <input
                 type="checkbox"
-                checked={formAllDay}
-                onChange={(e) => setFormAllDay(e.target.checked)}
-                className="rounded"
+                id="allDay"
+                checked={formData.isAllDay}
+                onChange={(e) => setFormData({ ...formData, isAllDay: e.target.checked })}
+                className="h-4 w-4 rounded"
               />
+              <Label htmlFor="allDay" className="cursor-pointer">
+                All Day Event
+              </Label>
             </div>
-
-            <div className="flex items-center justify-between rounded-lg border p-3">
-              <div className="space-y-0.5">
-                <Label>Mandatory Attendance</Label>
-                <p className="text-xs text-muted-foreground">
-                  All personnel required to attend
-                </p>
-              </div>
+            <div className="flex items-center gap-2">
               <input
                 type="checkbox"
-                checked={formMandatory}
-                onChange={(e) => setFormMandatory(e.target.checked)}
-                className="rounded"
+                id="mandatory"
+                checked={formData.isMandatory}
+                onChange={(e) => setFormData({ ...formData, isMandatory: e.target.checked })}
+                className="h-4 w-4 rounded"
               />
+              <Label htmlFor="mandatory" className="cursor-pointer">
+                Mandatory Attendance
+              </Label>
             </div>
           </div>
-
           <DialogFooter>
             <Button
               variant="outline"
               onClick={() => {
-                setCreateDialogOpen(false);
-                setEditDialogOpen(false);
+                setShowFormDialog(false);
                 resetForm();
               }}
             >
               Cancel
             </Button>
-            <Button onClick={editDialogOpen ? handleUpdate : handleCreate}>
-              {editDialogOpen ? "Update" : "Create"} Event
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* Delete Dialog */}
-      <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-destructive">
-              <AlertCircle className="h-5 w-5" />
-              Delete Event
-            </DialogTitle>
-            <DialogDescription>
-              Are you sure you want to delete "{selectedEvent?.title}"? This
-              action cannot be undone.
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => setDeleteDialogOpen(false)}
-            >
-              Cancel
-            </Button>
-            <Button variant="destructive" onClick={confirmDelete}>
-              Delete
-            </Button>
+            <Button onClick={handleCreateOrUpdate}>{editingEvent ? "Update" : "Create"} Event</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
