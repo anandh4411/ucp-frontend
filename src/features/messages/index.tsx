@@ -33,7 +33,7 @@ import { Label } from "@/components/ui/label";
 import { getCurrentUser } from "@/guards/useAuthGuard";
 import { toast } from "sonner";
 import { subscribeToConversations, subscribeToMessages } from "@/api/firebase/realtime";
-import { createConversation, sendMessage, updateMessage, deleteMessage, deleteConversation, type Conversation, type Message, getUsers } from "@/api/firebase/firestore";
+import { createConversation, sendMessage, updateMessage, deleteMessage, deleteConversation, markMessageAsRead, type Conversation, type Message, getUsers } from "@/api/firebase/firestore";
 import { type UserProfile } from "@/api/firebase/auth";
 
 export function MessagesPage() {
@@ -153,6 +153,29 @@ export function MessagesPage() {
       setUsersLoading(false);
     }
   };
+
+  // Mark messages as read when conversation is viewed
+  useEffect(() => {
+    if (!selectedConversation || !currentUser) return;
+
+    const markAllAsRead = async () => {
+      const unreadMessages = messages.filter(
+        (msg) => msg.senderId !== currentUser.uuid && !msg.readBy.includes(currentUser.uuid)
+      );
+
+      for (const msg of unreadMessages) {
+        if (msg.id) {
+          try {
+            await markMessageAsRead(selectedConversation, msg.id, currentUser.uuid);
+          } catch (error) {
+            console.error("Error marking message as read:", error);
+          }
+        }
+      }
+    };
+
+    markAllAsRead();
+  }, [selectedConversation, messages, currentUser]);
 
   // Get message status (for sent messages)
   const getMessageStatus = (message: Message) => {
@@ -348,9 +371,9 @@ export function MessagesPage() {
   const selectedUser = users.find((u) => u.uuid === composeTo);
 
   return (
-    <div className="h-[calc(100vh-8rem)] flex flex-col space-y-4">
+    <div className="h-[calc(100vh-4rem)] flex flex-col">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between p-4">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Messages</h1>
           <p className="text-muted-foreground">Secure unit communications</p>
@@ -362,9 +385,9 @@ export function MessagesPage() {
       </div>
 
       {/* Messages Layout */}
-      <div className="flex-1 grid grid-cols-12 gap-4 min-h-0">
+      <div className="flex-1 grid grid-cols-12 gap-4 min-h-0 px-4 pb-4">
         {/* Conversations List */}
-        <Card className="col-span-4 flex flex-col">
+        <Card className="col-span-4 flex flex-col min-h-0">
           <div className="p-4 border-b space-y-4">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -451,7 +474,7 @@ export function MessagesPage() {
         </Card>
 
         {/* Message Thread */}
-        <Card className="col-span-8 flex flex-col">
+        <Card className="col-span-8 flex flex-col min-h-0">
           {selectedConv ? (
             <>
               {/* Thread Header */}
