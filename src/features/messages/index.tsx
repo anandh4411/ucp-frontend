@@ -28,18 +28,38 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Label } from "@/components/ui/label";
 import { getCurrentUser } from "@/guards/useAuthGuard";
 import { toast } from "sonner";
-import { subscribeToConversations, subscribeToMessages } from "@/api/firebase/realtime";
-import { createConversation, sendMessage, updateMessage, deleteMessage, deleteConversation, markMessageAsRead, type Conversation, type Message, getUsers } from "@/api/firebase/firestore";
+import {
+  subscribeToConversations,
+  subscribeToMessages,
+} from "@/api/firebase/realtime";
+import {
+  createConversation,
+  sendMessage,
+  updateMessage,
+  deleteMessage,
+  deleteConversation,
+  markMessageAsRead,
+  type Conversation,
+  type Message,
+  getUsers,
+} from "@/api/firebase/firestore";
 import { type UserProfile } from "@/api/firebase/auth";
 
 export function MessagesPage() {
   const currentUser = getCurrentUser();
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const [selectedConversation, setSelectedConversation] = useState<string | null>(null);
+  const [selectedConversation, setSelectedConversation] = useState<
+    string | null
+  >(null);
   const [composeOpen, setComposeOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [messageText, setMessageText] = useState("");
@@ -66,10 +86,13 @@ export function MessagesPage() {
   useEffect(() => {
     if (!currentUser?.uuid) return;
 
-    const unsubscribe = subscribeToConversations(currentUser.uuid, (updatedConversations) => {
-      setConversations(updatedConversations);
-      setLoading(false);
-    });
+    const unsubscribe = subscribeToConversations(
+      currentUser.uuid,
+      (updatedConversations) => {
+        setConversations(updatedConversations);
+        setLoading(false);
+      }
+    );
 
     return () => unsubscribe();
   }, [currentUser?.uuid]);
@@ -81,9 +104,12 @@ export function MessagesPage() {
       return;
     }
 
-    const unsubscribe = subscribeToMessages(selectedConversation, (updatedMessages) => {
-      setMessages(updatedMessages);
-    });
+    const unsubscribe = subscribeToMessages(
+      selectedConversation,
+      (updatedMessages) => {
+        setMessages(updatedMessages);
+      }
+    );
 
     return () => unsubscribe();
   }, [selectedConversation]);
@@ -160,13 +186,19 @@ export function MessagesPage() {
 
     const markAllAsRead = async () => {
       const unreadMessages = messages.filter(
-        (msg) => msg.senderId !== currentUser.uuid && !msg.readBy.includes(currentUser.uuid)
+        (msg) =>
+          msg.senderId !== currentUser.uuid &&
+          !msg.readBy.includes(currentUser.uuid)
       );
 
       for (const msg of unreadMessages) {
         if (msg.id) {
           try {
-            await markMessageAsRead(selectedConversation, msg.id, currentUser.uuid);
+            await markMessageAsRead(
+              selectedConversation,
+              msg.id,
+              currentUser.uuid
+            );
           } catch (error) {
             console.error("Error marking message as read:", error);
           }
@@ -195,7 +227,11 @@ export function MessagesPage() {
 
     // Message delivered (has timestamp means it's saved in Firebase)
     if (message.timestamp) {
-      return { icon: CheckCheck, text: "Delivered", color: "text-muted-foreground" };
+      return {
+        icon: CheckCheck,
+        text: "Delivered",
+        color: "text-muted-foreground",
+      };
     }
 
     // Message sent (has ID)
@@ -214,7 +250,11 @@ export function MessagesPage() {
     try {
       if (editingMessage) {
         // Update existing message
-        await updateMessage(selectedConversation, editingMessage.id!, messageText);
+        await updateMessage(
+          selectedConversation,
+          editingMessage.id!,
+          messageText
+        );
         setEditingMessage(null);
         setMessageText("");
         toast.success("Message updated successfully");
@@ -233,7 +273,7 @@ export function MessagesPage() {
       }
     } catch (error: any) {
       console.error("Send message error:", error);
-      if (error.code === 'permission-denied') {
+      if (error.code === "permission-denied") {
         toast.error("Permission denied. Check your Firebase security rules.");
       } else {
         toast.error(error.message || "Failed to send message");
@@ -261,8 +301,10 @@ export function MessagesPage() {
       toast.success("Message deleted");
     } catch (error: any) {
       console.error("Delete message error:", error);
-      if (error.code === 'permission-denied') {
-        toast.error("Permission denied. You can only delete your own messages.");
+      if (error.code === "permission-denied") {
+        toast.error(
+          "Permission denied. You can only delete your own messages."
+        );
       } else {
         toast.error(error.message || "Failed to delete message");
       }
@@ -278,8 +320,10 @@ export function MessagesPage() {
       toast.success("Conversation deleted");
     } catch (error: any) {
       console.error("Delete conversation error:", error);
-      if (error.code === 'permission-denied') {
-        toast.error("Permission denied. You can only delete conversations you created.");
+      if (error.code === "permission-denied") {
+        toast.error(
+          "Permission denied. You can only delete conversations you created."
+        );
       } else {
         toast.error(error.message || "Failed to delete conversation");
       }
@@ -403,26 +447,36 @@ export function MessagesPage() {
           <ScrollArea className="flex-1 min-h-0">
             <div className="p-2 space-y-1">
               {loading ? (
-                <div className="text-center py-8 text-muted-foreground">Loading conversations...</div>
+                <div className="text-center py-8 text-muted-foreground">
+                  Loading conversations...
+                </div>
               ) : filteredConversations.length === 0 ? (
-                <div className="text-center py-8 text-muted-foreground">No conversations found</div>
+                <div className="text-center py-8 text-muted-foreground">
+                  No conversations found
+                </div>
               ) : (
                 filteredConversations.map((conv) => {
                   const isSelected = selectedConversation === conv.id;
-                  const otherParticipantId = conv.participants.find((p) => p !== currentUser?.uuid);
-                  const otherParticipant = getUserById(otherParticipantId || "");
+                  const otherParticipantId = conv.participants.find(
+                    (p) => p !== currentUser?.uuid
+                  );
+                  const otherParticipant = getUserById(
+                    otherParticipantId || ""
+                  );
                   const participantName = otherParticipant
                     ? `${otherParticipant.rank} ${otherParticipant.name}`
                     : usersLoading
-                      ? "Loading..."
-                      : "Unknown User";
+                    ? "Loading..."
+                    : "Unknown User";
 
                   return (
                     <button
                       key={conv.id}
                       onClick={() => setSelectedConversation(conv.id!)}
-                      className={`w-[93%] text-left p-3 rounded-lg transition-colors ${
-                        isSelected ? "bg-primary/10 border border-primary/20" : "hover:bg-muted/50"
+                      className={`w-full text-left p-3 rounded-lg transition-colors ${
+                        isSelected
+                          ? "bg-primary/10 border border-primary/20"
+                          : "hover:bg-muted/50"
                       }`}
                     >
                       <div className="flex items-start gap-3">
@@ -434,16 +488,16 @@ export function MessagesPage() {
 
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center justify-between mb-1">
-                            <span className="font-medium text-sm truncate">
+                            <span className="font-medium text-sm truncate min-w-0 flex-1">
                               {participantName}
                             </span>
-                            <span className="text-xs text-muted-foreground">
+                            <span className="text-xs text-muted-foreground flex-shrink-0 ml-2">
                               {conv.lastMessage?.timestamp?.toLocaleDateString()}
                             </span>
                           </div>
 
-                          <div className="flex items-center gap-2 mb-1">
-                            <p className="text-sm truncate flex-1 font-semibold text-foreground">
+                          <div className="flex items-center gap-2 mb-1 min-w-0">
+                            <p className="text-sm truncate flex-1 font-semibold text-foreground min-w-0">
                               {conv.subject}
                             </p>
                             {conv.isUrgent && (
@@ -459,7 +513,10 @@ export function MessagesPage() {
                           </p>
 
                           {conv.unreadCount > 0 && (
-                            <Badge variant="default" className="mt-2 text-xs h-5 px-2">
+                            <Badge
+                              variant="default"
+                              className="mt-2 text-xs h-5 px-2"
+                            >
                               {conv.unreadCount} new
                             </Badge>
                           )}
@@ -485,7 +542,9 @@ export function MessagesPage() {
                       const otherParticipantId = selectedConv.participants.find(
                         (p) => p !== currentUser?.uuid
                       );
-                      const otherParticipant = getUserById(otherParticipantId || "");
+                      const otherParticipant = getUserById(
+                        otherParticipantId || ""
+                      );
                       return (
                         <>
                           <Avatar className="h-10 w-10">
@@ -495,9 +554,14 @@ export function MessagesPage() {
                           </Avatar>
                           <div>
                             <div className="flex items-center gap-2">
-                              <h2 className="font-semibold">{selectedConv.subject}</h2>
+                              <h2 className="font-semibold">
+                                {selectedConv.subject}
+                              </h2>
                               {selectedConv.isUrgent && (
-                                <Badge variant="destructive" className="text-xs">
+                                <Badge
+                                  variant="destructive"
+                                  className="text-xs"
+                                >
                                   Urgent
                                 </Badge>
                               )}
@@ -511,7 +575,9 @@ export function MessagesPage() {
                               {selectedConv.participants
                                 .map((p) => {
                                   const user = getUserById(p);
-                                  return user ? `${user.rank} ${user.name}` : "Unknown";
+                                  return user
+                                    ? `${user.rank} ${user.name}`
+                                    : "Unknown";
                                 })
                                 .join(", ")}
                             </p>
@@ -527,7 +593,10 @@ export function MessagesPage() {
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
-                      <DropdownMenuItem onClick={handleDeleteConversation} className="text-destructive">
+                      <DropdownMenuItem
+                        onClick={handleDeleteConversation}
+                        className="text-destructive"
+                      >
                         <Trash2 className="mr-2 h-4 w-4" />
                         Delete Conversation
                       </DropdownMenuItem>
@@ -545,73 +614,88 @@ export function MessagesPage() {
                     </div>
                   ) : (
                     messages.map((message) => {
-                    const isCurrentUser = message.senderId === currentUser?.uuid;
-                    const sender = getUserById(message.senderId);
-                    const senderName = sender
-                      ? `${sender.rank} ${sender.name}`
-                      : usersLoading
+                      const isCurrentUser =
+                        message.senderId === currentUser?.uuid;
+                      const sender = getUserById(message.senderId);
+                      const senderName = sender
+                        ? `${sender.rank} ${sender.name}`
+                        : usersLoading
                         ? "Loading..."
                         : "Unknown User";
 
-                    return (
-                      <div
-                        key={message.id}
-                        className={`flex group ${isCurrentUser ? "justify-end" : "justify-start"}`}
-                      >
-                        <div className={`max-w-[70%] ${isCurrentUser ? "order-2" : "order-1"}`}>
-                          <div className="relative">
-                            <div
-                              className={`rounded-lg p-3 ${
-                                isCurrentUser ? "bg-primary text-primary-foreground" : "bg-muted"
-                              }`}
-                            >
-                              {!isCurrentUser && (
-                                <p className="text-xs font-semibold mb-1.5 opacity-70">
-                                  {senderName}
+                      return (
+                        <div
+                          key={message.id}
+                          className={`flex group ${
+                            isCurrentUser ? "justify-end" : "justify-start"
+                          }`}
+                        >
+                          <div
+                            className={`max-w-[70%] ${
+                              isCurrentUser ? "order-2" : "order-1"
+                            }`}
+                          >
+                            <div className="relative">
+                              <div
+                                className={`rounded-lg p-3 ${
+                                  isCurrentUser
+                                    ? "bg-primary text-primary-foreground"
+                                    : "bg-muted"
+                                }`}
+                              >
+                                {!isCurrentUser && (
+                                  <p className="text-xs font-semibold mb-1.5 opacity-70">
+                                    {senderName}
+                                  </p>
+                                )}
+                                <p className="text-sm whitespace-pre-wrap break-words">
+                                  {message.content}
                                 </p>
-                              )}
-                              <p className="text-sm whitespace-pre-wrap break-words">{message.content}</p>
-                            </div>
-                            {isCurrentUser && (
-                              <div className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity flex gap-1">
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  className="h-6 w-6 bg-background/80 hover:bg-background"
-                                  onClick={() => handleEditMessage(message)}
-                                >
-                                  <Edit className="h-3 w-3" />
-                                </Button>
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  className="h-6 w-6 bg-background/80 hover:bg-background"
-                                  onClick={() => handleDeleteMessage(message)}
-                                >
-                                  <Trash2 className="h-3 w-3" />
-                                </Button>
                               </div>
-                            )}
-                          </div>
-                          <div className="flex items-center gap-1.5 mt-1 px-1">
-                            <p className="text-xs text-muted-foreground">
-                              {message.timestamp?.toLocaleString()}
-                            </p>
-                            {isCurrentUser && (() => {
-                              const status = getMessageStatus(message);
-                              if (!status) return null;
-                              const StatusIcon = status.icon;
-                              return (
-                                <div className={`flex items-center gap-0.5 ${status.color}`}>
-                                  <StatusIcon className="h-3 w-3" />
+                              {isCurrentUser && (
+                                <div className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity flex gap-1">
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-6 w-6 bg-background/80 hover:bg-background"
+                                    onClick={() => handleEditMessage(message)}
+                                  >
+                                    <Edit className="h-3 w-3" />
+                                  </Button>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-6 w-6 bg-background/80 hover:bg-background"
+                                    onClick={() => handleDeleteMessage(message)}
+                                  >
+                                    <Trash2 className="h-3 w-3" />
+                                  </Button>
                                 </div>
-                              );
-                            })()}
+                              )}
+                            </div>
+                            <div className="flex items-center gap-1.5 mt-1 px-1">
+                              <p className="text-xs text-muted-foreground">
+                                {message.timestamp?.toLocaleString()}
+                              </p>
+                              {isCurrentUser &&
+                                (() => {
+                                  const status = getMessageStatus(message);
+                                  if (!status) return null;
+                                  const StatusIcon = status.icon;
+                                  return (
+                                    <div
+                                      className={`flex items-center gap-0.5 ${status.color}`}
+                                    >
+                                      <StatusIcon className="h-3 w-3" />
+                                    </div>
+                                  );
+                                })()}
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    );
-                  }))}
+                      );
+                    })
+                  )}
                   <div ref={messagesEndRef} />
                 </div>
               </ScrollArea>
@@ -620,8 +704,14 @@ export function MessagesPage() {
               <div className="p-3 border-t">
                 {editingMessage && (
                   <div className="flex items-center justify-between mb-2 p-2 bg-muted rounded">
-                    <span className="text-sm text-muted-foreground">Editing message</span>
-                    <Button variant="ghost" size="sm" onClick={handleCancelEdit}>
+                    <span className="text-sm text-muted-foreground">
+                      Editing message
+                    </span>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={handleCancelEdit}
+                    >
                       Cancel
                     </Button>
                   </div>
@@ -641,7 +731,10 @@ export function MessagesPage() {
                     disabled={sending}
                   />
                   <div className="flex flex-col gap-2">
-                    <Button onClick={handleSendMessage} disabled={sending || !messageText.trim()}>
+                    <Button
+                      onClick={handleSendMessage}
+                      disabled={sending || !messageText.trim()}
+                    >
                       {sending ? (
                         <div className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
                       ) : (
@@ -666,16 +759,19 @@ export function MessagesPage() {
       </div>
 
       {/* Compose Dialog - WhatsApp Style */}
-      <Dialog open={composeOpen} onOpenChange={(open) => {
-        setComposeOpen(open);
-        if (!open) {
-          setComposeTo("");
-          setComposeSubject("");
-          setComposeMessage("");
-          setComposeImportant(false);
-          setUserSearchQuery("");
-        }
-      }}>
+      <Dialog
+        open={composeOpen}
+        onOpenChange={(open) => {
+          setComposeOpen(open);
+          if (!open) {
+            setComposeTo("");
+            setComposeSubject("");
+            setComposeMessage("");
+            setComposeImportant(false);
+            setUserSearchQuery("");
+          }
+        }}
+      >
         <DialogContent className="sm:max-w-2xl max-h-[80vh] p-0">
           {!composeTo ? (
             /* User Selection Screen */
@@ -705,12 +801,18 @@ export function MessagesPage() {
                   {usersLoading ? (
                     <div className="text-center py-12">
                       <div className="mx-auto h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent mb-2" />
-                      <p className="text-sm text-muted-foreground">Loading users...</p>
+                      <p className="text-sm text-muted-foreground">
+                        Loading users...
+                      </p>
                     </div>
                   ) : usersError ? (
                     <div className="text-center py-12 space-y-3">
                       <p className="text-sm text-destructive">{usersError}</p>
-                      <Button variant="outline" size="sm" onClick={retryLoadUsers}>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={retryLoadUsers}
+                      >
                         Retry
                       </Button>
                     </div>
@@ -827,7 +929,12 @@ export function MessagesPage() {
                 >
                   Back
                 </Button>
-                <Button onClick={handleComposeSubmit} disabled={sending || !composeSubject.trim() || !composeMessage.trim()}>
+                <Button
+                  onClick={handleComposeSubmit}
+                  disabled={
+                    sending || !composeSubject.trim() || !composeMessage.trim()
+                  }
+                >
                   {sending && (
                     <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
                   )}
