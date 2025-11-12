@@ -371,9 +371,9 @@ export function MessagesPage() {
   const selectedUser = users.find((u) => u.uuid === composeTo);
 
   return (
-    <div className="h-[calc(100vh-4rem)] flex flex-col">
+    <div className="h-[calc(100vh-10rem)] flex flex-col overflow-hidden">
       {/* Header */}
-      <div className="flex items-center justify-between p-4">
+      <div className="flex items-center justify-between px-4 pt-4 pb-2">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Messages</h1>
           <p className="text-muted-foreground">Secure unit communications</p>
@@ -385,7 +385,7 @@ export function MessagesPage() {
       </div>
 
       {/* Messages Layout */}
-      <div className="flex-1 grid grid-cols-12 gap-4 min-h-0 px-4 pb-4">
+      <div className="flex-1 grid grid-cols-12 gap-4 min-h-0 overflow-hidden px-4 pb-4">
         {/* Conversations List */}
         <Card className="col-span-4 flex flex-col min-h-0">
           <div className="p-4 border-b space-y-4">
@@ -400,7 +400,7 @@ export function MessagesPage() {
             </div>
           </div>
 
-          <ScrollArea className="flex-1">
+          <ScrollArea className="flex-1 min-h-0">
             <div className="p-2 space-y-1">
               {loading ? (
                 <div className="text-center py-8 text-muted-foreground">Loading conversations...</div>
@@ -421,7 +421,7 @@ export function MessagesPage() {
                     <button
                       key={conv.id}
                       onClick={() => setSelectedConversation(conv.id!)}
-                      className={`w-full text-left p-3 rounded-lg transition-colors ${
+                      className={`w-[93%] text-left p-3 rounded-lg transition-colors ${
                         isSelected ? "bg-primary/10 border border-primary/20" : "hover:bg-muted/50"
                       }`}
                     >
@@ -474,7 +474,7 @@ export function MessagesPage() {
         </Card>
 
         {/* Message Thread */}
-        <Card className="col-span-8 flex flex-col min-h-0">
+        <Card className="col-span-8 flex flex-col min-h-0 gap-0">
           {selectedConv ? (
             <>
               {/* Thread Header */}
@@ -537,7 +537,7 @@ export function MessagesPage() {
               </div>
 
               {/* Messages */}
-              <ScrollArea className="flex-1 p-4">
+              <ScrollArea className="flex-1 min-h-0 px-4">
                 <div className="space-y-4">
                   {messages.length === 0 ? (
                     <div className="flex items-center justify-center h-full text-muted-foreground">
@@ -617,7 +617,7 @@ export function MessagesPage() {
               </ScrollArea>
 
               {/* Reply Input */}
-              <div className="p-4 border-t">
+              <div className="p-3 border-t">
                 {editingMessage && (
                   <div className="flex items-center justify-between mb-2 p-2 bg-muted rounded">
                     <span className="text-sm text-muted-foreground">Editing message</span>
@@ -629,7 +629,7 @@ export function MessagesPage() {
                 <div className="flex gap-2">
                   <Textarea
                     placeholder="Type your message... (Ctrl+Enter to send)"
-                    className="min-h-[80px] resize-none"
+                    className="min-h-20 resize-none"
                     value={messageText}
                     onChange={(e) => setMessageText(e.target.value)}
                     onKeyDown={(e) => {
@@ -641,9 +641,6 @@ export function MessagesPage() {
                     disabled={sending}
                   />
                   <div className="flex flex-col gap-2">
-                    <Button variant="outline" size="icon" disabled title="Attachments (Coming soon)">
-                      <Paperclip className="h-4 w-4" />
-                    </Button>
                     <Button onClick={handleSendMessage} disabled={sending || !messageText.trim()}>
                       {sending ? (
                         <div className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
