@@ -7,6 +7,7 @@ import {
   Home,
   Activity,
   Shield,
+  Settings,
 } from "lucide-react";
 import { SidebarItem } from "@/components/layout/types";
 import React from "react";
@@ -67,7 +68,13 @@ export const getNavItems = (
   return commonItems;
 };
 
-export const footerNavItems: SidebarItem[] = [];
+export const footerNavItems: SidebarItem[] = [
+  {
+    label: "Settings",
+    path: "/dashboard/settings",
+    icon: Settings,
+  },
+];
 
 export const brandingConfig = {
   iconComponent: Shield,
