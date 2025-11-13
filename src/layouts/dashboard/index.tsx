@@ -79,11 +79,7 @@ export const DashboardLayout = ({
       isPathActive={isPathActive}
       userProfile={navbarUserProfile}
       userId={userId}
-      welcomeMessage={
-        userProfile
-          ? `Welcome back, ${userProfile.rank} ${userProfile.name}`
-          : "Welcome back"
-      }
+      welcomeMessage="Welcome back"
       subText="Unit Communication Portal"
     >
       {children}
