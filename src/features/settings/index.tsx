@@ -106,6 +106,11 @@ export default function SettingsPage() {
   const handlePasswordChange = async (e: React.FormEvent) => {
     e.preventDefault();
 
+    if (!passwordForm.currentPassword) {
+      toast.error("Current password is required");
+      return;
+    }
+
     if (passwordForm.newPassword !== passwordForm.confirmPassword) {
       toast.error("Passwords do not match");
       return;
@@ -118,7 +123,7 @@ export default function SettingsPage() {
 
     setSaving(true);
     try {
-      await updatePassword(passwordForm.newPassword);
+      await updatePassword(passwordForm.newPassword, passwordForm.currentPassword);
       toast.success("Password updated successfully");
       setPasswordForm({
         currentPassword: "",
@@ -293,6 +298,23 @@ export default function SettingsPage() {
             </CardHeader>
             <CardContent>
               <form onSubmit={handlePasswordChange} className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="currentPassword">Current Password *</Label>
+                  <Input
+                    id="currentPassword"
+                    type="password"
+                    value={passwordForm.currentPassword}
+                    onChange={(e) =>
+                      setPasswordForm({
+                        ...passwordForm,
+                        currentPassword: e.target.value,
+                      })
+                    }
+                    placeholder="Enter current password"
+                    required
+                  />
+                </div>
+
                 <div className="space-y-2">
                   <Label htmlFor="newPassword">New Password *</Label>
                   <Input

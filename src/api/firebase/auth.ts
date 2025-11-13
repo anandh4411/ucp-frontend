@@ -3,6 +3,8 @@ import {
   signOut,
   sendPasswordResetEmail,
   updatePassword as firebaseUpdatePassword,
+  reauthenticateWithCredential,
+  EmailAuthProvider,
   User as FirebaseUser,
   UserCredential,
 } from 'firebase/auth';
@@ -109,14 +111,35 @@ export const resetPassword = async (email: string): Promise<void> => {
 /**
  * Update password for current user
  */
-export const updatePassword = async (newPassword: string): Promise<void> => {
+export const updatePassword = async (
+  newPassword: string,
+  currentPassword?: string
+): Promise<void> => {
   try {
     const user = auth.currentUser;
-    if (!user) {
+    if (!user || !user.email) {
       throw new Error('No user logged in');
     }
 
-    await firebaseUpdatePassword(user, newPassword);
+    // If we get requires-recent-login error, we need current password
+    try {
+      await firebaseUpdatePassword(user, newPassword);
+    } catch (error: any) {
+      if (error.code === 'auth/requires-recent-login') {
+        if (!currentPassword) {
+          throw new Error('Current password required for security. Please provide your current password.');
+        }
+
+        // Re-authenticate user
+        const credential = EmailAuthProvider.credential(user.email, currentPassword);
+        await reauthenticateWithCredential(user, credential);
+
+        // Retry password update
+        await firebaseUpdatePassword(user, newPassword);
+      } else {
+        throw error;
+      }
+    }
   } catch (error: any) {
     console.error('Update password error:', error);
     throw new Error(getAuthErrorMessage(error.code));
