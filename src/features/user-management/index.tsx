@@ -257,16 +257,23 @@ export default function UserManagement() {
         }
       }
 
-      await updateDoc(doc(db, "users", editingUser.id!), {
+      // Build update object, excluding undefined values
+      const updateData: any = {
         name: formData.name,
         rank: formData.rank,
         role: formData.role,
         serviceNumber: formData.serviceNumber,
         unit: formData.unit,
-        avatar: avatarUrl,
         isActive: formData.isActive,
         updatedAt: serverTimestamp(),
-      });
+      };
+
+      // Only add avatar if it has a value
+      if (avatarUrl) {
+        updateData.avatar = avatarUrl;
+      }
+
+      await updateDoc(doc(db, "users", editingUser.id!), updateData);
 
       toast.success("User updated successfully");
       setShowEditDialog(false);

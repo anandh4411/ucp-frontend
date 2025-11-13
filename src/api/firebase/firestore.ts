@@ -127,8 +127,17 @@ export const updateUser = async (
 ): Promise<void> => {
   try {
     const docRef = doc(db, 'users', userId);
+
+    // Filter out undefined values (Firestore doesn't accept undefined)
+    const filteredUpdates = Object.entries(updates).reduce((acc, [key, value]) => {
+      if (value !== undefined) {
+        acc[key] = value;
+      }
+      return acc;
+    }, {} as any);
+
     await updateDoc(docRef, {
-      ...updates,
+      ...filteredUpdates,
       updatedAt: serverTimestamp(),
     });
   } catch (error) {

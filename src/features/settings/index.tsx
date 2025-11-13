@@ -79,12 +79,19 @@ export default function SettingsPage() {
 
     setSaving(true);
     try {
-      await updateUser(userProfile.uuid, {
+      // Only include defined fields
+      const updates: any = {
         name: profileForm.name,
         rank: profileForm.rank,
         unit: profileForm.unit,
-        phone: profileForm.phone,
-      });
+      };
+
+      // Only add phone if it has a value
+      if (profileForm.phone) {
+        updates.phone = profileForm.phone;
+      }
+
+      await updateUser(userProfile.uuid, updates);
 
       toast.success("Profile updated successfully. Changes will reflect on next login.");
     } catch (error: any) {
