@@ -35,13 +35,6 @@ export interface DashboardLayoutProps
   userId?: string;
 }
 
-// Default user profile
-const defaultUserProfile: UserProfile = {
-  name: "Admin User",
-  email: "admin@example.com",
-  avatarUrl: "https://randomuser.me/api/portraits/men/32.jpg",
-};
-
 export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
   children,
   showSidebar = true,
@@ -61,7 +54,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
   // Navbar props with defaults
   welcomeMessage = "Welcome back",
   subText = "Start using the unit communication portal",
-  userProfile = defaultUserProfile,
+  userProfile,
   onProfileClick,
   userId,
   ...props

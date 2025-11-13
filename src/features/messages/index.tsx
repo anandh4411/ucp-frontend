@@ -53,6 +53,8 @@ import {
   getUsers,
 } from "@/api/firebase/firestore";
 import { type UserProfile } from "@/api/firebase/auth";
+import { Spinner } from "@/components/ui/spinner";
+import { SkeletonList } from "@/components/ui/loading-skeletons";
 
 export function MessagesPage() {
   const currentUser = getCurrentUser();
@@ -447,9 +449,7 @@ export function MessagesPage() {
           <ScrollArea className="flex-1 min-h-0">
             <div className="p-2 space-y-1">
               {loading ? (
-                <div className="text-center py-8 text-muted-foreground">
-                  Loading conversations...
-                </div>
+                <SkeletonList items={8} showAvatar showBadge />
               ) : filteredConversations.length === 0 ? (
                 <div className="text-center py-8 text-muted-foreground">
                   No conversations found
@@ -734,12 +734,9 @@ export function MessagesPage() {
                     <Button
                       onClick={handleSendMessage}
                       disabled={sending || !messageText.trim()}
+                      isLoading={sending}
                     >
-                      {sending ? (
-                        <div className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
-                      ) : (
-                        <Send className="h-4 w-4" />
-                      )}
+                      <Send className="h-4 w-4" />
                     </Button>
                   </div>
                 </div>
@@ -799,12 +796,7 @@ export function MessagesPage() {
               <ScrollArea className="h-[400px]">
                 <div className="p-2">
                   {usersLoading ? (
-                    <div className="text-center py-12">
-                      <div className="mx-auto h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent mb-2" />
-                      <p className="text-sm text-muted-foreground">
-                        Loading users...
-                      </p>
-                    </div>
+                    <SkeletonList items={6} showAvatar />
                   ) : usersError ? (
                     <div className="text-center py-12 space-y-3">
                       <p className="text-sm text-destructive">{usersError}</p>
@@ -934,12 +926,10 @@ export function MessagesPage() {
                   disabled={
                     sending || !composeSubject.trim() || !composeMessage.trim()
                   }
+                  isLoading={sending}
                 >
-                  {sending && (
-                    <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
-                  )}
-                  {sending ? "Sending..." : "Send Message"}
-                  {!sending && <Send className="ml-2 h-4 w-4" />}
+                  <Send className="mr-2 h-4 w-4" />
+                  Send Message
                 </Button>
               </DialogFooter>
             </>

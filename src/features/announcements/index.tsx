@@ -13,6 +13,8 @@ import { getCurrentUser } from "@/guards/useAuthGuard";
 import { toast } from "sonner";
 import { subscribeToAnnouncements } from "@/api/firebase/realtime";
 import { createAnnouncement, updateAnnouncement, deleteAnnouncement, incrementAnnouncementView, type Announcement } from "@/api/firebase/firestore";
+import { Spinner } from "@/components/ui/spinner";
+import { SkeletonCard } from "@/components/ui/loading-skeletons";
 
 const priorityOptions = [
   { label: "Normal", value: "normal" },
@@ -187,8 +189,19 @@ export default function Announcements() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-96">
-        <div className="text-muted-foreground">Loading announcements...</div>
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <div className="space-y-1">
+            <div className="h-8 w-48 bg-accent animate-pulse rounded" />
+            <div className="h-4 w-64 bg-accent animate-pulse rounded" />
+          </div>
+        </div>
+        <div className="grid gap-4 md:grid-cols-2">
+          <SkeletonCard showHeader lines={4} />
+          <SkeletonCard showHeader lines={4} />
+          <SkeletonCard showHeader lines={4} />
+          <SkeletonCard showHeader lines={4} />
+        </div>
       </div>
     );
   }
@@ -321,8 +334,8 @@ export default function Announcements() {
             <Button variant="outline" onClick={closeDialog} disabled={saving}>
               Cancel
             </Button>
-            <Button onClick={handleCreateOrUpdate} disabled={saving}>
-              {saving ? "Saving..." : editingAnnouncement ? "Update" : "Create"}
+            <Button onClick={handleCreateOrUpdate} disabled={saving} isLoading={saving}>
+              {editingAnnouncement ? "Update" : "Create"}
             </Button>
           </DialogFooter>
         </DialogContent>

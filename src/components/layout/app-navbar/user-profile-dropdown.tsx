@@ -45,7 +45,7 @@ export function UserProfileDropdown({
         >
           <Avatar className="w-8 h-8 sm:w-9 sm:h-9">
             <AvatarImage
-              src={userProfile.avatarUrl || ""}
+              src={userProfile.avatarUrl || undefined}
               alt={userProfile.name}
             />
             <AvatarFallback className="bg-primary/20 text-primary font-semibold text-sm">

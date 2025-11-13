@@ -7,6 +7,7 @@ import { NotificationDropdown } from "./notification-dropdown";
 import { WelcomeMessage } from "./welcome-message";
 import { useTheme } from "@/context/theme-context";
 import { UserProfile } from "../types";
+import { SkeletonAvatar } from "@/components/ui/loading-skeletons";
 
 export interface NavbarProps extends React.HTMLAttributes<HTMLElement> {
   // Welcome section
@@ -31,11 +32,7 @@ export function Navbar({
   // Welcome section
   welcomeMessage = "Welcome back",
   subText = "",
-  userProfile = {
-    name: "John Doe",
-    email: "john@example.com",
-    avatarUrl: "https://randomuser.me/api/portraits/men/32.jpg",
-  },
+  userProfile,
 
   // Feature toggles
   showThemeToggle = true,
@@ -77,11 +74,18 @@ export function Navbar({
         {showSidebarTrigger && <div className="h-7 w-px bg-primary/30 mx-1" />}
 
         {/* Welcome Message */}
-        <WelcomeMessage
-          welcomeMessage={welcomeMessage}
-          subText={subText}
-          userName={userProfile?.name}
-        />
+        {userProfile ? (
+          <WelcomeMessage
+            welcomeMessage={welcomeMessage}
+            subText={subText}
+            userName={userProfile.name}
+          />
+        ) : (
+          <div className="min-w-0 flex-1 space-y-1.5">
+            <div className="h-5 w-32 sm:w-40 bg-accent animate-pulse rounded" />
+            <div className="hidden md:block h-3 w-24 bg-accent animate-pulse rounded" />
+          </div>
+        )}
       </div>
 
       {/* Right Section */}
@@ -97,10 +101,14 @@ export function Navbar({
         {showNotifications && <NotificationDropdown userId={userId} />}
 
         {/* User Profile */}
-        <UserProfileDropdown
-          userProfile={userProfile}
-          onLogout={onLogout}
-        />
+        {userProfile ? (
+          <UserProfileDropdown
+            userProfile={userProfile}
+            onLogout={onLogout}
+          />
+        ) : (
+          <SkeletonAvatar size="md" showDetails className="hidden sm:flex" />
+        )}
       </div>
     </header>
   );

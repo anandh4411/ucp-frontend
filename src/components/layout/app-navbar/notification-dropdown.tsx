@@ -1,4 +1,5 @@
 import { Bell, Check, CheckCheck, Megaphone, MessageSquare } from "lucide-react";
+import { SkeletonList } from "@/components/ui/loading-skeletons";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -96,9 +97,7 @@ export function NotificationDropdown({
         <DropdownMenuSeparator />
 
         {loading ? (
-          <div className="py-8 text-center text-sm text-muted-foreground">
-            Loading notifications...
-          </div>
+          <SkeletonList items={4} showAvatar={false} showBadge />
         ) : notifications.length === 0 ? (
           <div className="py-8 text-center text-sm text-muted-foreground">
             No notifications

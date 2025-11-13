@@ -21,6 +21,8 @@ import {
   useRecentMessages,
   useUpcomingEvents,
 } from "@/hooks/useDashboardData";
+import { Spinner } from "@/components/ui/spinner";
+import { SkeletonCard, SkeletonList } from "@/components/ui/loading-skeletons";
 
 // Stat Card Component
 const StatCard = ({
@@ -131,10 +133,7 @@ export default function Dashboard() {
   if (!user || stats.loading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-muted-foreground">Loading dashboard...</p>
-        </div>
+        <Spinner size="lg" />
       </div>
     );
   }
@@ -198,9 +197,7 @@ export default function Dashboard() {
             </CardHeader>
             <CardContent className="space-y-2">
               {activityLoading ? (
-                <div className="text-center py-8 text-muted-foreground">
-                  Loading activity...
-                </div>
+                <SkeletonList items={5} showAvatar showBadge />
               ) : activity.length === 0 ? (
                 <div className="text-center py-8 text-muted-foreground">
                   No recent activity
@@ -232,9 +229,7 @@ export default function Dashboard() {
             </CardHeader>
             <CardContent className="space-y-3">
               {announcementsLoading ? (
-                <div className="text-center py-8 text-muted-foreground">
-                  Loading announcements...
-                </div>
+                <SkeletonList items={5} showAvatar={false} showBadge />
               ) : announcements.length === 0 ? (
                 <div className="text-center py-8 text-muted-foreground">
                   No announcements yet
@@ -374,9 +369,7 @@ export default function Dashboard() {
             </CardHeader>
             <CardContent className="space-y-2">
               {activityLoading ? (
-                <div className="text-center py-8 text-muted-foreground">
-                  Loading activity...
-                </div>
+                <SkeletonList items={5} showAvatar showBadge />
               ) : activity.length === 0 ? (
                 <div className="text-center py-8 text-muted-foreground">
                   No recent activity
@@ -401,9 +394,7 @@ export default function Dashboard() {
             </CardHeader>
             <CardContent className="space-y-3">
               {announcementsLoading ? (
-                <div className="text-center py-8 text-muted-foreground">
-                  Loading announcements...
-                </div>
+                <SkeletonList items={5} showAvatar={false} showBadge />
               ) : announcements.length === 0 ? (
                 <div className="text-center py-8 text-muted-foreground">
                   No announcements yet
@@ -540,9 +531,7 @@ export default function Dashboard() {
           </CardHeader>
           <CardContent className="space-y-3">
             {messagesLoading ? (
-              <div className="text-center py-8 text-muted-foreground">
-                Loading messages...
-              </div>
+              <SkeletonList items={5} showAvatar={false} />
             ) : messages.length === 0 ? (
               <div className="text-center py-8 text-muted-foreground">
                 No recent messages
@@ -588,9 +577,7 @@ export default function Dashboard() {
           </CardHeader>
           <CardContent className="space-y-3">
             {eventsLoading ? (
-              <div className="text-center py-8 text-muted-foreground">
-                Loading events...
-              </div>
+              <SkeletonList items={3} showAvatar />
             ) : events.length === 0 ? (
               <div className="text-center py-8 text-muted-foreground">
                 No upcoming events
