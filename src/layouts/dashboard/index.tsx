@@ -57,6 +57,9 @@ export const DashboardLayout = ({
       }
     : undefined;
 
+  // Get userId for notifications
+  const userId = userProfile?.uuid;
+
   return (
     <DashboardLayoutComponent
       currentPath={location.pathname}
@@ -67,6 +70,7 @@ export const DashboardLayout = ({
       branding={branding}
       isPathActive={isPathActive}
       userProfile={navbarUserProfile}
+      userId={userId}
       welcomeMessage={
         userProfile
           ? `Welcome back, ${userProfile.rank} ${userProfile.name}`

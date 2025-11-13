@@ -32,6 +32,7 @@ export interface DashboardLayoutProps
   subText?: string;
   userProfile?: UserProfile;
   onProfileClick?: () => void;
+  userId?: string;
 }
 
 // Default user profile
@@ -62,6 +63,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
   subText = "Start using the unit communication portal",
   userProfile = defaultUserProfile,
   onProfileClick,
+  userId,
   ...props
 }) => {
   const smoothScrollRef = useSmoothScroll(false);
@@ -87,6 +89,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
       userProfile={userProfile}
       onProfileClick={onProfileClick}
       onLogout={onLogout}
+      userId={userId}
     />
   );
 

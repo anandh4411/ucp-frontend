@@ -9,8 +9,19 @@ import {
   DropdownMenuSeparator,
   DropdownMenuShortcut,
 } from "@/components/ui/dropdown-menu";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
 import { UserProfile } from "../types";
+
+// Helper function to get initials from name
+function getInitials(name: string): string {
+  return name
+    .split(" ")
+    .map(part => part[0])
+    .join("")
+    .toUpperCase()
+    .slice(0, 2);
+}
 
 interface UserProfileDropdownProps {
   userProfile: UserProfile;
@@ -32,11 +43,17 @@ export function UserProfileDropdown({
             className
           )}
         >
-          <img
-            src={userProfile.avatarUrl}
-            alt={`${userProfile.name}'s avatar`}
-            className="w-8 h-8 sm:w-9 sm:h-9 rounded-full flex-shrink-0"
-          />
+          <Avatar className="w-8 h-8 sm:w-9 sm:h-9">
+            {userProfile.avatarUrl && (
+              <AvatarImage
+                src={userProfile.avatarUrl}
+                alt={`${userProfile.name}'s avatar`}
+              />
+            )}
+            <AvatarFallback className="bg-primary text-primary-foreground font-semibold text-sm">
+              {getInitials(userProfile.name)}
+            </AvatarFallback>
+          </Avatar>
           {/* User details - Hidden on mobile */}
           <div className="hidden sm:block min-w-0">
             <div className="font-medium text-foreground text-sm truncate">

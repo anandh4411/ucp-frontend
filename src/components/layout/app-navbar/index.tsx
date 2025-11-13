@@ -3,6 +3,7 @@ import { cn } from "@/lib/utils";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { ThemeToggle } from "./theme-toggle";
 import { UserProfileDropdown } from "./user-profile-dropdown";
+import { NotificationDropdown } from "./notification-dropdown";
 import { WelcomeMessage } from "./welcome-message";
 import { useTheme } from "@/context/theme-context";
 import { UserProfile } from "../types";
@@ -16,10 +17,14 @@ export interface NavbarProps extends React.HTMLAttributes<HTMLElement> {
   // Feature toggles
   showThemeToggle?: boolean;
   showSidebarTrigger?: boolean;
+  showNotifications?: boolean;
 
   // User profile configuration
   onProfileClick?: () => void;
   onLogout?: () => void;
+
+  // Notification configuration
+  userId?: string;
 }
 
 export function Navbar({
@@ -35,10 +40,14 @@ export function Navbar({
   // Feature toggles
   showThemeToggle = true,
   showSidebarTrigger = true,
+  showNotifications = true,
 
   // User profile configuration
   onProfileClick,
   onLogout,
+
+  // Notification configuration
+  userId,
 
   className,
   ...props
@@ -83,6 +92,9 @@ export function Navbar({
           theme={theme}
           onThemeChange={setTheme}
         />
+
+        {/* Notifications */}
+        {showNotifications && <NotificationDropdown userId={userId} />}
 
         {/* User Profile */}
         <UserProfileDropdown
