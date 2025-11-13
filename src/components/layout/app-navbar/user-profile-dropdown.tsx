@@ -9,7 +9,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuShortcut,
 } from "@/components/ui/dropdown-menu";
-import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
 import { UserProfile } from "../types";
 
@@ -44,13 +44,11 @@ export function UserProfileDropdown({
           )}
         >
           <Avatar className="w-8 h-8 sm:w-9 sm:h-9">
-            {userProfile.avatarUrl && (
-              <AvatarImage
-                src={userProfile.avatarUrl}
-                alt={`${userProfile.name}'s avatar`}
-              />
-            )}
-            <AvatarFallback className="bg-primary text-primary-foreground font-semibold text-sm">
+            <AvatarImage
+              src={userProfile.avatarUrl || ""}
+              alt={userProfile.name}
+            />
+            <AvatarFallback className="bg-primary/20 text-primary font-semibold text-sm">
               {getInitials(userProfile.name)}
             </AvatarFallback>
           </Avatar>
