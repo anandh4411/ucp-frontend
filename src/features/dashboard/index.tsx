@@ -187,32 +187,49 @@ export default function Dashboard() {
 
         {/* Main Content Grid */}
         <div className="grid gap-6 md:grid-cols-2">
-          {/* Recent Activity */}
+          {/* Upcoming Events */}
           <Card className="col-span-1">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <Activity className="h-5 w-5" />
-                Recent Activity
+                <Calendar className="h-5 w-5" />
+                Upcoming Events
               </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-2">
-              {activityLoading ? (
-                <SkeletonList items={5} showAvatar showBadge />
-              ) : activity.length === 0 ? (
+            <CardContent className="space-y-3">
+              {eventsLoading ? (
+                <SkeletonList items={5} showAvatar />
+              ) : events.length === 0 ? (
                 <div className="text-center py-8 text-muted-foreground">
-                  No recent activity
+                  No upcoming events
                 </div>
               ) : (
                 <>
-                  {activity.map((item) => (
-                    <ActivityItem key={item.id} activity={item} />
+                  {events.map((event) => (
+                    <div
+                      key={event.id}
+                      className="flex items-start space-x-3 p-3 rounded-lg border cursor-pointer hover:bg-accent/50 transition-colors"
+                      onClick={() => router.navigate({ to: "/dashboard/calendar" })}
+                    >
+                      <div className="bg-primary/10 p-2 rounded-full">
+                        <Calendar className="h-4 w-4 text-primary" />
+                      </div>
+                      <div className="flex-1 space-y-1">
+                        <p className="text-sm font-medium">{event.title}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {new Date(event.startTime).toLocaleString()}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          📍 {event.location}
+                        </p>
+                      </div>
+                    </div>
                   ))}
                   <Button
                     variant="outline"
                     className="w-full mt-4"
-                    onClick={() => router.navigate({ to: "/dashboard/messages" })}
+                    onClick={() => router.navigate({ to: "/dashboard/calendar" })}
                   >
-                    View All Activity
+                    View Calendar
                   </Button>
                 </>
               )}
