@@ -59,10 +59,15 @@ export default function SettingsPage() {
         phone: userProfile.phone || "",
       });
 
-      // Load notification settings from localStorage
-      const savedSettings = localStorage.getItem(`notifications_${userProfile.uuid}`);
-      if (savedSettings) {
-        setNotifications(JSON.parse(savedSettings));
+      // Load notification settings from userProfile first, then fallback to localStorage
+      const userPreferences = (userProfile as any).preferences;
+      if (userPreferences) {
+        setNotifications(userPreferences);
+      } else {
+        const savedSettings = localStorage.getItem(`notifications_${userProfile.uuid}`);
+        if (savedSettings) {
+          setNotifications(JSON.parse(savedSettings));
+        }
       }
     }
   }, [userProfile]);
@@ -127,16 +132,21 @@ export default function SettingsPage() {
 
     setSaving(true);
     try {
-      // Save to localStorage
+      // Save to Firebase
+      await updateUser(userProfile.uuid, {
+        preferences: notifications,
+      } as any);
+
+      // Also save to localStorage as backup
       localStorage.setItem(
         `notifications_${userProfile.uuid}`,
         JSON.stringify(notifications)
       );
 
-      toast.success("Notification settings updated");
+      toast.success("Notification preferences saved successfully");
     } catch (error: any) {
       console.error("Notification update error:", error);
-      toast.error("Failed to update notification settings");
+      toast.error(error.message || "Failed to update notification settings");
     } finally {
       setSaving(false);
     }

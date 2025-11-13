@@ -17,6 +17,7 @@ export interface UserProfile {
   role: 'adjt' | 'it_jco' | 'user';
   serviceNumber: string;
   unit: string;
+  phone?: string;
   avatar?: string;
   isActive: boolean;
   createdAt: Date;
