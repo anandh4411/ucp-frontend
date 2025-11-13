@@ -34,10 +34,18 @@ export const DashboardLayout = ({
   };
 
   const isPathActive = (path: string) => {
+    // Exact match for root
     if (path === "/") {
       return location.pathname === "/" || location.pathname === "";
     }
-    return location.pathname.startsWith(path);
+
+    // Exact match for dashboard home
+    if (path === "/dashboard") {
+      return location.pathname === "/dashboard" || location.pathname === "/dashboard/";
+    }
+
+    // For other paths, check if it starts with the path followed by / or is exact match
+    return location.pathname === path || location.pathname.startsWith(path + "/");
   };
 
   const branding = {
