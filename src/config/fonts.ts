@@ -25,4 +25,4 @@
  * }
  * ```
  */
-export const fonts = ["inter", "manrope", "poppins"] as const;
+export const fonts = ["rajdhani", "inter", "manrope", "poppins"] as const;

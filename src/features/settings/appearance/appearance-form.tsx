@@ -7,7 +7,6 @@ import { fonts } from "@/config/fonts";
 import { cn } from "@/lib/utils";
 import { useFont } from "@/context/font-context";
 import { useTheme } from "@/context/theme-context";
-import { useColorTheme } from "@/context/color-theme-context";
 import { Button } from "@/components/ui/button";
 import {
   Form,
@@ -180,7 +179,6 @@ const ColorThemeItem: React.FC<ColorThemeItemProps> = ({
 export function AppearanceForm() {
   const { font, setFont } = useFont();
   const { theme, setTheme } = useTheme();
-  const { colorTheme, setColorTheme } = useColorTheme();
 
   const defaultValues: Partial<AppearanceFormValues> = {
     font,
@@ -199,11 +197,6 @@ export function AppearanceForm() {
   // Handle immediate theme change
   const handleThemeChange = (newTheme: "light" | "dark") => {
     setTheme(newTheme);
-  };
-
-  // Handle immediate color theme change
-  const handleColorThemeChange = (newColorTheme: string) => {
-    setColorTheme(newColorTheme as any);
   };
 
   return (

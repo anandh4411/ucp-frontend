@@ -3,7 +3,6 @@ import { createRouter, RouterProvider } from "@tanstack/react-router";
 import { routeTree } from "./routeTree.gen";
 import { ThemeProvider } from "./context/theme-context";
 import { FontProvider } from "./context/font-context";
-import { ColorThemeProvider } from "./context/color-theme-context";
 import { AuthProvider } from "./context/auth-context";
 
 // Create a new QueryClient instance
@@ -50,13 +49,11 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <ThemeProvider defaultTheme="system" storageKey="impressaa-ui-theme">
-        <ColorThemeProvider>
-          <FontProvider>
-            <AuthProvider>
-              <RouterProvider router={router} />
-            </AuthProvider>
-          </FontProvider>
-        </ColorThemeProvider>
+        <FontProvider>
+          <AuthProvider>
+            <RouterProvider router={router} />
+          </AuthProvider>
+        </FontProvider>
       </ThemeProvider>
     </QueryClientProvider>
   );
