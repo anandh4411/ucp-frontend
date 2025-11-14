@@ -64,22 +64,27 @@ export default function SignIn() {
       if (result.tokens.refreshToken) {
         localStorage.setItem("ucp_refresh_token", result.tokens.refreshToken);
       }
-      localStorage.setItem("ucp_user", JSON.stringify({
-        uuid: result.profile.uuid,
-        name: result.profile.name,
-        email: result.profile.email,
-        role: result.profile.role,
-        rank: result.profile.rank,
-        serviceNumber: result.profile.serviceNumber,
-        unit: result.profile.unit,
-        avatar: result.profile.avatar,
-      }));
+      localStorage.setItem(
+        "ucp_user",
+        JSON.stringify({
+          uuid: result.profile.uuid,
+          name: result.profile.name,
+          email: result.profile.email,
+          role: result.profile.role,
+          rank: result.profile.rank,
+          serviceNumber: result.profile.serviceNumber,
+          unit: result.profile.unit,
+          avatar: result.profile.avatar,
+        })
+      );
 
       if (values.rememberMe) {
         localStorage.setItem("ucp_remember", "true");
       }
 
-      toast.success(`Welcome back, ${result.profile.rank} ${result.profile.name}!`);
+      toast.success(
+        `Welcome back, ${result.profile.rank} ${result.profile.name}!`
+      );
 
       // Navigate to dashboard
       router.navigate({ to: "/dashboard" });
@@ -108,7 +113,10 @@ export default function SignIn() {
           {/* Unit Badge */}
           <div className="mb-8">
             <div className="w-24 h-24 bg-primary-foreground/10 backdrop-blur-sm rounded-full flex items-center justify-center border-2 border-primary-foreground/30 shadow-2xl">
-              <Shield className="w-14 h-14 text-primary-foreground" strokeWidth={1.5} />
+              <Shield
+                className="w-14 h-14 text-primary-foreground"
+                strokeWidth={1.5}
+              />
             </div>
           </div>
 
@@ -118,7 +126,8 @@ export default function SignIn() {
           </h1>
 
           <p className="text-xl text-primary-foreground/80 mb-8 max-w-md leading-relaxed">
-            Secure military communications platform for operational excellence and unit coordination.
+            Secure military communications platform for operational excellence
+            and unit coordination.
           </p>
 
           {/* Features */}
@@ -168,7 +177,10 @@ export default function SignIn() {
             </div>
 
             <Form {...form}>
-              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">
+              <form
+                onSubmit={form.handleSubmit(onSubmit)}
+                className="space-y-5"
+              >
                 {/* Email */}
                 <FormField
                   control={form.control}
@@ -290,7 +302,6 @@ export default function SignIn() {
                     Request Access
                   </Button>
                 </div>
-
               </form>
             </Form>
           </div>
