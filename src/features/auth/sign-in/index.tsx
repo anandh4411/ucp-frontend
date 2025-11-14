@@ -5,6 +5,7 @@ import { useRouter } from "@tanstack/react-router";
 import { Shield, Eye, EyeOff, Lock } from "lucide-react";
 import { z } from "zod";
 import { Button } from "@/components/ui/button";
+import loginImage from "@/assets/images/login.jpg";
 import {
   Form,
   FormControl,
@@ -96,14 +97,11 @@ export default function SignIn() {
       <div className="hidden lg:flex lg:w-1/2 relative bg-gradient-to-br from-primary via-primary/90 to-primary overflow-hidden">
         {/* Background Image */}
         <div
-          className="absolute inset-0 bg-cover bg-center opacity-40"
+          className="absolute inset-0 bg-cover bg-center"
           style={{
-            backgroundImage: "url('https://images.unsplash.com/photo-1551522435-a13afa10f103?w=1200&h=1200&fit=crop')",
+            backgroundImage: `url(${loginImage})`,
           }}
         />
-
-        {/* Overlay Pattern */}
-        <div className="absolute inset-0 bg-[linear-gradient(45deg,transparent_25%,rgba(68,68,68,.05)_25%,rgba(68,68,68,.05)_50%,transparent_50%,transparent_75%,rgba(68,68,68,.05)_75%,rgba(68,68,68,.05))] bg-[length:60px_60px]" />
 
         {/* Content */}
         <div className="relative z-10 flex flex-col justify-center px-12 text-primary-foreground">
@@ -293,29 +291,6 @@ export default function SignIn() {
                   </Button>
                 </div>
 
-                {/* Demo Credentials */}
-                <div className="mt-6 p-4 bg-chart-4/10 border border-chart-4/30 rounded-lg space-y-2">
-                  <div className="flex items-center gap-2">
-                    <div className="w-1 h-1 bg-chart-4 rounded-full" />
-                    <p className="text-xs font-bold text-chart-4 uppercase tracking-wide">
-                      Test Credentials
-                    </p>
-                  </div>
-                  <div className="text-xs space-y-1 text-foreground font-mono">
-                    <div className="flex justify-between">
-                      <span className="font-semibold">Adjutant:</span>
-                      <span>adjt@unit.mil / Adjt@2025</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="font-semibold">IT JCO:</span>
-                      <span>itjco@unit.mil / ItJco@2025</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="font-semibold">User:</span>
-                      <span>user@unit.mil / User@2025</span>
-                    </div>
-                  </div>
-                </div>
               </form>
             </Form>
           </div>
