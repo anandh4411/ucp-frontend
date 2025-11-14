@@ -373,7 +373,7 @@ export default function Announcements() {
   );
 }
 
-// Announcement Card Component
+// Announcement Card Component - Military Style
 function AnnouncementCard({
   announcement,
   isAdmin,
@@ -389,18 +389,33 @@ function AnnouncementCard({
   onDelete: (a: Announcement) => void;
   getPriorityColor: (priority: string) => "destructive" | "default" | "secondary";
 }) {
+  const getPriorityBorderColor = (priority: string) => {
+    switch (priority) {
+      case "urgent": return "border-l-destructive";
+      case "high": return "border-l-primary";
+      default: return "border-l-border";
+    }
+  };
+
   return (
-    <Card className="hover:shadow-md transition-shadow cursor-pointer" onClick={() => onView(announcement)}>
+    <Card className={`hover:shadow-lg transition-all cursor-pointer border-l-4 ${getPriorityBorderColor(announcement.priority)} relative overflow-hidden`} onClick={() => onView(announcement)}>
+      {announcement.priority === "urgent" && (
+        <div className="absolute top-0 right-0 w-16 h-16 overflow-hidden">
+          <div className="absolute transform rotate-45 bg-destructive text-destructive-foreground text-xs font-bold py-1 right-[-35px] top-[10px] w-[100px] text-center shadow-sm">
+            URGENT
+          </div>
+        </div>
+      )}
       <CardHeader className="pb-3">
         <div className="flex items-start justify-between">
           <div className="flex-1">
             <div className="flex items-center gap-2 mb-2">
               {announcement.isPinned && <Pin className="h-4 w-4 text-primary" />}
-              <h3 className="font-semibold text-lg">{announcement.title}</h3>
+              <h3 className="font-bold text-lg tracking-tight">{announcement.title}</h3>
             </div>
             <div className="flex gap-2 mb-3">
-              <Badge variant={getPriorityColor(announcement.priority)}>{announcement.priority}</Badge>
-              <Badge variant="outline">{announcement.category}</Badge>
+              <Badge variant={getPriorityColor(announcement.priority)} className="font-semibold uppercase text-xs">{announcement.priority}</Badge>
+              <Badge variant="outline" className="uppercase text-xs">{announcement.category}</Badge>
             </div>
             <p className="text-sm text-muted-foreground line-clamp-2">{announcement.content}</p>
           </div>

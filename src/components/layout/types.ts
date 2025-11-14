@@ -41,6 +41,8 @@ export interface UserProfile {
   name: string;
   email: string;
   avatarUrl?: string;
+  rank?: string;
+  role?: string;
 }
 
 export interface UserAccount {

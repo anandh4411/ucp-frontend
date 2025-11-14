@@ -103,11 +103,15 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
           <main
             ref={smoothScrollRef}
             className={cn(
-              "flex-1 w-full h-full overflow-auto bg-background p-6",
+              "flex-1 w-full h-full overflow-auto bg-background p-6 relative",
               contentClassName
             )}
+            style={{
+              backgroundImage: `linear-gradient(rgba(var(--color-border) / 0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(var(--color-border) / 0.03) 1px, transparent 1px)`,
+              backgroundSize: '20px 20px'
+            }}
           >
-            <div className="w-full max-w-full">{children}</div>
+            <div className="w-full max-w-full relative z-10">{children}</div>
           </main>
         </div>
       </div>

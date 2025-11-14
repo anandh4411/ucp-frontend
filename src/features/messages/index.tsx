@@ -637,16 +637,21 @@ export function MessagesPage() {
                           >
                             <div className="relative">
                               <div
-                                className={`rounded-lg p-3 ${
+                                className={`rounded-md p-3 shadow-sm ${
                                   isCurrentUser
-                                    ? "bg-primary text-primary-foreground"
-                                    : "bg-muted"
+                                    ? "bg-primary text-primary-foreground border-l-4 border-l-primary-foreground/30"
+                                    : "bg-muted border-l-4 border-l-border"
                                 }`}
                               >
                                 {!isCurrentUser && (
-                                  <p className="text-xs font-semibold mb-1.5 opacity-70">
-                                    {senderName}
-                                  </p>
+                                  <div className="flex items-center gap-2 mb-1.5">
+                                    <Badge variant="outline" className="text-xs font-semibold border-primary/50 text-primary">
+                                      {sender?.rank || ""}
+                                    </Badge>
+                                    <p className="text-xs font-semibold opacity-70">
+                                      {sender?.name || "Unknown"}
+                                    </p>
+                                  </div>
                                 )}
                                 <p className="text-sm whitespace-pre-wrap break-words">
                                   {message.content}

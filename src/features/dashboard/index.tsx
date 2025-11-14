@@ -24,7 +24,7 @@ import {
 import { Spinner } from "@/components/ui/spinner";
 import { SkeletonCard, SkeletonList } from "@/components/ui/loading-skeletons";
 
-// Stat Card Component
+// Stat Card Component - Military Tactical Style
 const StatCard = ({
   title,
   value,
@@ -38,18 +38,20 @@ const StatCard = ({
   description?: string;
   trend?: string;
 }) => (
-  <Card>
+  <Card className="border-l-4 border-l-primary shadow-md hover:shadow-lg transition-shadow">
     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-      <CardTitle className="text-sm font-medium">{title}</CardTitle>
-      <Icon className="h-4 w-4 text-muted-foreground" />
+      <CardTitle className="text-sm font-semibold tracking-wide">{title}</CardTitle>
+      <div className="p-2 bg-primary/10 rounded-md">
+        <Icon className="h-5 w-5 text-primary" />
+      </div>
     </CardHeader>
     <CardContent>
-      <div className="text-2xl font-bold">{value}</div>
+      <div className="text-3xl font-bold tracking-tight">{value}</div>
       {description && (
         <p className="text-xs text-muted-foreground mt-1">{description}</p>
       )}
       {trend && (
-        <div className="flex items-center mt-1 text-xs text-emerald-600 dark:text-emerald-400">
+        <div className="flex items-center mt-2 text-xs font-semibold text-chart-2">
           <TrendingUp className="h-3 w-3 mr-1" />
           {trend}
         </div>
@@ -280,44 +282,52 @@ export default function Dashboard() {
         </div>
 
         {/* Quick Actions */}
-        <Card>
+        <Card className="border-l-4 border-l-primary">
           <CardHeader>
-            <CardTitle>Quick Actions</CardTitle>
+            <CardTitle className="font-bold">Quick Actions</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="grid gap-4 md:grid-cols-4">
               <Button
                 variant="outline"
-                className="h-20 flex-col"
+                className="h-24 flex-col gap-2 border-2 hover:border-primary hover:bg-primary/5 hover:shadow-md transition-all font-semibold"
                 onClick={() =>
                   router.navigate({ to: "/dashboard/announcements" })
                 }
               >
-                <Megaphone className="h-6 w-6 mb-2" />
+                <div className="p-2 bg-primary/10 rounded-md">
+                  <Megaphone className="h-6 w-6 text-primary" />
+                </div>
                 New Announcement
               </Button>
               <Button
                 variant="outline"
-                className="h-20 flex-col"
+                className="h-24 flex-col gap-2 border-2 hover:border-primary hover:bg-primary/5 hover:shadow-md transition-all font-semibold"
                 onClick={() => router.navigate({ to: "/dashboard/messages" })}
               >
-                <MessageSquare className="h-6 w-6 mb-2" />
+                <div className="p-2 bg-primary/10 rounded-md">
+                  <MessageSquare className="h-6 w-6 text-primary" />
+                </div>
                 Send Message
               </Button>
               <Button
                 variant="outline"
-                className="h-20 flex-col"
+                className="h-24 flex-col gap-2 border-2 hover:border-primary hover:bg-primary/5 hover:shadow-md transition-all font-semibold"
                 onClick={() => router.navigate({ to: "/dashboard/user-management" })}
               >
-                <Users className="h-6 w-6 mb-2" />
+                <div className="p-2 bg-primary/10 rounded-md">
+                  <Users className="h-6 w-6 text-primary" />
+                </div>
                 Manage Users
               </Button>
               <Button
                 variant="outline"
-                className="h-20 flex-col"
+                className="h-24 flex-col gap-2 border-2 hover:border-primary hover:bg-primary/5 hover:shadow-md transition-all font-semibold"
                 onClick={() => router.navigate({ to: "/dashboard/analytics" })}
               >
-                <Activity className="h-6 w-6 mb-2" />
+                <div className="p-2 bg-primary/10 rounded-md">
+                  <Activity className="h-6 w-6 text-primary" />
+                </div>
                 View Analytics
               </Button>
             </div>
@@ -445,42 +455,50 @@ export default function Dashboard() {
         </div>
 
         {/* Quick Actions */}
-        <Card>
+        <Card className="border-l-4 border-l-primary">
           <CardHeader>
-            <CardTitle>Quick Actions</CardTitle>
+            <CardTitle className="font-bold">Quick Actions</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="grid gap-4 md:grid-cols-4">
               <Button
                 variant="outline"
-                className="h-20 flex-col"
+                className="h-24 flex-col gap-2 border-2 hover:border-primary hover:bg-primary/5 hover:shadow-md transition-all font-semibold"
                 onClick={() => router.navigate({ to: "/dashboard/user-management" })}
               >
-                <Users className="h-6 w-6 mb-2" />
+                <div className="p-2 bg-primary/10 rounded-md">
+                  <Users className="h-6 w-6 text-primary" />
+                </div>
                 Manage Users
               </Button>
               <Button
                 variant="outline"
-                className="h-20 flex-col"
+                className="h-24 flex-col gap-2 border-2 hover:border-primary hover:bg-primary/5 hover:shadow-md transition-all font-semibold"
                 onClick={() => router.navigate({ to: "/dashboard/messages" })}
               >
-                <MessageSquare className="h-6 w-6 mb-2" />
+                <div className="p-2 bg-primary/10 rounded-md">
+                  <MessageSquare className="h-6 w-6 text-primary" />
+                </div>
                 Messages
               </Button>
               <Button
                 variant="outline"
-                className="h-20 flex-col"
+                className="h-24 flex-col gap-2 border-2 hover:border-primary hover:bg-primary/5 hover:shadow-md transition-all font-semibold"
                 onClick={() => router.navigate({ to: "/dashboard/resources" })}
               >
-                <FolderOpen className="h-6 w-6 mb-2" />
+                <div className="p-2 bg-primary/10 rounded-md">
+                  <FolderOpen className="h-6 w-6 text-primary" />
+                </div>
                 Resources
               </Button>
               <Button
                 variant="outline"
-                className="h-20 flex-col"
+                className="h-24 flex-col gap-2 border-2 hover:border-primary hover:bg-primary/5 hover:shadow-md transition-all font-semibold"
                 onClick={() => router.navigate({ to: "/dashboard/analytics" })}
               >
-                <Activity className="h-6 w-6 mb-2" />
+                <div className="p-2 bg-primary/10 rounded-md">
+                  <Activity className="h-6 w-6 text-primary" />
+                </div>
                 Analytics
               </Button>
             </div>
@@ -634,44 +652,52 @@ export default function Dashboard() {
       </div>
 
       {/* Quick Actions */}
-      <Card>
+      <Card className="border-l-4 border-l-primary">
         <CardHeader>
-          <CardTitle>Quick Actions</CardTitle>
+          <CardTitle className="font-bold">Quick Actions</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="grid gap-4 md:grid-cols-4">
             <Button
               variant="outline"
-              className="h-20 flex-col"
+              className="h-24 flex-col gap-2 border-2 hover:border-primary hover:bg-primary/5 hover:shadow-md transition-all font-semibold"
               onClick={() => router.navigate({ to: "/dashboard/messages" })}
             >
-              <MessageSquare className="h-6 w-6 mb-2" />
+              <div className="p-2 bg-primary/10 rounded-md">
+                <MessageSquare className="h-6 w-6 text-primary" />
+              </div>
               Messages
             </Button>
             <Button
               variant="outline"
-              className="h-20 flex-col"
+              className="h-24 flex-col gap-2 border-2 hover:border-primary hover:bg-primary/5 hover:shadow-md transition-all font-semibold"
               onClick={() =>
                 router.navigate({ to: "/dashboard/announcements" })
               }
             >
-              <Megaphone className="h-6 w-6 mb-2" />
+              <div className="p-2 bg-primary/10 rounded-md">
+                <Megaphone className="h-6 w-6 text-primary" />
+              </div>
               Announcements
             </Button>
             <Button
               variant="outline"
-              className="h-20 flex-col"
+              className="h-24 flex-col gap-2 border-2 hover:border-primary hover:bg-primary/5 hover:shadow-md transition-all font-semibold"
               onClick={() => router.navigate({ to: "/dashboard/resources" })}
             >
-              <FolderOpen className="h-6 w-6 mb-2" />
+              <div className="p-2 bg-primary/10 rounded-md">
+                <FolderOpen className="h-6 w-6 text-primary" />
+              </div>
               Resources
             </Button>
             <Button
               variant="outline"
-              className="h-20 flex-col"
+              className="h-24 flex-col gap-2 border-2 hover:border-primary hover:bg-primary/5 hover:shadow-md transition-all font-semibold"
               onClick={() => router.navigate({ to: "/dashboard/calendar" })}
             >
-              <Calendar className="h-6 w-6 mb-2" />
+              <div className="p-2 bg-primary/10 rounded-md">
+                <Calendar className="h-6 w-6 text-primary" />
+              </div>
               Calendar
             </Button>
           </div>

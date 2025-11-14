@@ -27,10 +27,10 @@ export function SidebarBrand({
       className={`w-fit flex items-center px-1 transition-all duration-300 ease-in-out cursor-pointer ${className}`}
       onClick={handleClick}
     >
-      <div className="p-2 h-auto w-12 rounded-md flex items-center justify-center mr-3 group-data-[collapsible=icon]:mr-0 transition-all duration-300 ease-in-out">
+      <div className="p-2 h-auto w-12 rounded-md bg-primary/10 border-2 border-primary/30 flex items-center justify-center mr-3 group-data-[collapsible=icon]:mr-0 transition-all duration-300 ease-in-out shadow-sm">
         {logo}
       </div>
-      <span className="font-semibold text-lg group-data-[collapsible=icon]:hidden transition-opacity duration-300 ease-in-out">
+      <span className="font-bold text-lg tracking-wide group-data-[collapsible=icon]:hidden transition-opacity duration-300 ease-in-out">
         {name}
       </span>
     </div>

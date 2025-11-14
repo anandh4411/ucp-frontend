@@ -79,6 +79,8 @@ export function Navbar({
             welcomeMessage={welcomeMessage}
             subText={subText}
             userName={userProfile.name}
+            userRank={userProfile.rank}
+            userRole={userProfile.role}
           />
         ) : (
           <div className="min-w-0 flex-1 space-y-1.5">
