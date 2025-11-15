@@ -35,7 +35,7 @@ const router = createRouter({
     queryClient,
     isEmbedded
   },
-  basepath: isEmbedded ? "/impressaa" : "/",
+  basepath: isEmbedded ? "/ucp" : "/",
 });
 
 // Register the router instance for type safety
@@ -48,7 +48,7 @@ declare module "@tanstack/react-router" {
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <ThemeProvider defaultTheme="system" storageKey="impressaa-ui-theme">
+      <ThemeProvider defaultTheme="system" storageKey="ucp-ui-theme">
         <FontProvider>
           <AuthProvider>
             <RouterProvider router={router} />

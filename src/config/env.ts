@@ -30,7 +30,7 @@ class Environment {
         import.meta.env.VITE_API_REFRESH_TIMEOUT || "5000",
         10
       ),
-      APP_NAME: import.meta.env.VITE_APP_NAME || "Impressaa",
+      APP_NAME: import.meta.env.VITE_APP_NAME || "ucp",
       APP_VERSION: import.meta.env.VITE_APP_VERSION || "1.0.0",
       NODE_ENV: import.meta.env.MODE as "development" | "production" | "test",
       ENABLE_DEV_TOOLS:
@@ -38,9 +38,9 @@ class Environment {
         import.meta.env.MODE === "development",
       DISABLE_AUTH_GUARD: import.meta.env.VITE_DISABLE_AUTH_GUARD === "true",
       ACCESS_TOKEN_KEY:
-        import.meta.env.VITE_ACCESS_TOKEN_KEY || "impressaa_access_token",
+        import.meta.env.VITE_ACCESS_TOKEN_KEY || "ucp_access_token",
       REFRESH_TOKEN_KEY:
-        import.meta.env.VITE_REFRESH_TOKEN_KEY || "impressaa_refresh_token",
+        import.meta.env.VITE_REFRESH_TOKEN_KEY || "ucp_refresh_token",
     };
   }
 

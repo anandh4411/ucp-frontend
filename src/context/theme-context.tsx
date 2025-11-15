@@ -23,7 +23,7 @@ const ThemeProviderContext = createContext<ThemeProviderState>(initialState);
 export function ThemeProvider({
   children,
   defaultTheme = "system",
-  storageKey = "impressaa-ui-theme",
+  storageKey = "ucp-ui-theme",
   ...props
 }: ThemeProviderProps) {
   const [theme, _setTheme] = useState<Theme>(

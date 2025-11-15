@@ -9,7 +9,7 @@ import { TanStackRouterVite } from "@tanstack/router-vite-plugin";
 export default defineConfig({
   plugins: [
     federation({
-      name: "impressaa",
+      name: "ucp",
       filename: "remoteEntry.js",
       exposes: {
         "./App": "./src/App.tsx",
